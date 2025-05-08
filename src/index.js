@@ -15,7 +15,7 @@ const app = express();
 
 // 1) CORS: allow your React app origin
 app.use(cors({
-  origin: 'http://localhost:5173', // your Vite dev server
+  origin: 'https://token-dashboard-three.vercel.app', // your Vite dev server
   credentials: true,
 }));
 
