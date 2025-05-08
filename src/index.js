@@ -90,4 +90,9 @@ const start = async () => {
 
 app.use(errorHandler);
 
-start();
+if (process.env.NODE_ENV !== 'test') {
+  start();
+}
+
+// Export app for testing
+export default app;

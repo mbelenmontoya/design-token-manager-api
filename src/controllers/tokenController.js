@@ -60,7 +60,7 @@ export const updateToken = async (req, res) => {
 // @desc    Delete a token
 // @route   DELETE /api/tokens/:id
 // @access  Public
-export const deleteToken = async (req, res) => {
+export const deleteToken = async (req, res, next) => {
     try {
         const deleted = await Token.findByIdAndDelete(req.params.id);
         if (!deleted) {
