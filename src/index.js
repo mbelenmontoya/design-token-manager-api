@@ -7,7 +7,7 @@ import tokenRoutes from './routes/tokens.js';
 import errorHandler from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import swaggerJSDoc from 'swagger-jsdoc';
-import swaggerUi   from 'swagger-ui-express';
+import swaggerUi from 'swagger-ui-express';
 
 
 dotenv.config();
@@ -15,7 +15,7 @@ const app = express();
 
 // 1) CORS: allow your React app origin
 app.use(cors({
-  origin: 'https://token-dashboard-three.vercel.app', // your Vite dev server
+  origin: process.env.CLIENT_URL, // your Vite dev server
   credentials: true,
 }));
 
@@ -52,12 +52,14 @@ const swaggerSpec = swaggerJSDoc({
         },
         TokenInput: {
           type: 'object',
-          required: ['name','value'],
+          required: ['name', 'value'],
           properties: {
             name: { type: 'string' },
             value: { type: 'string' },
-            category: { type: 'string',
-              enum: ['color','spacing','font','shadow','other'] },
+            category: {
+              type: 'string',
+              enum: ['color', 'spacing', 'font', 'shadow', 'other']
+            },
             description: { type: 'string' },
           },
         },

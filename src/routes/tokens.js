@@ -13,7 +13,7 @@ import {
 } from '../controllers/tokenController.js';
 import { body, validationResult } from 'express-validator';
 import verifyJWT from '../middleware/verifyJWT.js';
-
+import { importTokens } from '../controllers/importController.js';
 const router = express.Router();
 
 // ‣ GET   /api/tokens
@@ -163,5 +163,43 @@ router
  *         description: Token not found
  */
   .delete(verifyJWT, deleteToken);
+  /**
+ * @swagger
+ * /api/tokens/import:
+ *   post:
+ *     summary: Bulk import or update tokens
+ *     tags: [Tokens]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               $ref: '#/components/schemas/TokenInput'
+ *     responses:
+ *       200:
+ *         description: Import summary
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 created:
+ *                   type: integer
+ *                 updated:
+ *                   type: integer
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       error:
+ *                         type: string
+ */
+  router.post('/import', verifyJWT, importTokens);
+
 
 export default router;
