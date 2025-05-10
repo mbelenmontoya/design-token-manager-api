@@ -8,6 +8,7 @@ import errorHandler from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import categoryRoutes from './routes/categories.js';
 
 
 dotenv.config();
@@ -74,6 +75,7 @@ const swaggerSpec = swaggerJSDoc({
 app.use('/api/tokens', tokenRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api/categories', categoryRoutes);
 
 
 // 5) Health‐check
