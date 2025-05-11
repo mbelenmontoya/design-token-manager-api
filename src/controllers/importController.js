@@ -1,4 +1,5 @@
 import Token from '../models/Token.js';
+import Category from '../models/Category.js';
 
 export const importTokens = async (req, res) => {
   const tokens = req.body;
@@ -12,9 +13,12 @@ export const importTokens = async (req, res) => {
   await Promise.all(tokens.map(async (t) => {
     try {
       const { name, value, category, description } = t;
-      if (!name || !value) {
-        throw new Error('`name` and `value` are required');
-      }
+
+      if (!name || !value) throw new Error('`name` and `value` are required');
+
+      // Upsert category
+      await Category.updateOne({ name: category }, { name: category }, { upsert: true });
+
       const result = await Token.findOneAndUpdate(
         { name },
         { name, value, category, description },

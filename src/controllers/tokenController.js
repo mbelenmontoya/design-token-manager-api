@@ -1,4 +1,5 @@
 import Token from '../models/Token.js';
+import Category from '../models/Category.js';
 
 // @desc    Get all tokens
 // @route   GET /api/tokens
@@ -33,6 +34,9 @@ export const getTokens = async (req, res) => {
 // @access  Public (you can lock this down later)
 export const createToken = async (req, res) => {
   const { name, value, category, description } = req.body;
+
+  // Upsert category if missing
+  await Category.updateOne({ name: category }, { name: category }, { upsert: true });
 
   const exists = await Token.findOne({ name });
   if (exists) {
