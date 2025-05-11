@@ -14,7 +14,6 @@ const tokenSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['color', 'spacing', 'font', 'shadow', 'other'],
     default: 'other',
   },
   description: {

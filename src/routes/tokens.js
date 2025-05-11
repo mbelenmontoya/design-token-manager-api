@@ -90,7 +90,6 @@ router
     [
         body('name').isString().notEmpty(),
         body('value').isString().notEmpty(),
-        body('category').isIn(['color','spacing','font','shadow','other']),
     ],
     (req, res, next) => {
         const errors = validationResult(req);
