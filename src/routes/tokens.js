@@ -19,7 +19,19 @@ import { importTokens } from '../controllers/importController.js';
 import verifyApiKey from '../middleware/verifyApiKey.js';
 const router = express.Router();
 
-// API key access
+/**
+ * Token routes supporting project-level API key access.
+ *
+ * Clients may supply a non-JWT API key using the header
+ * `Authorization: Bearer <apiKey>`.
+ *
+ * Required scopes:
+ *   - `read:tokens` for `GET /api/tokens`
+ *   - `write:tokens` for `POST`, `PUT`, and `DELETE /api/tokens`
+ *
+ * API keys are scoped to a single project and cannot access tokens outside
+ * of that project.
+ */
 router.get('/', verifyApiKey('read:tokens'), getTokens);
 router.post(
   '/',
