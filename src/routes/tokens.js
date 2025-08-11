@@ -16,7 +16,30 @@ import verifyJWT from '../middleware/verifyJWT.js';
 import tenantContext from '../middleware/tenantContext.js';
 import requireRole from '../middleware/requireRole.js';
 import { importTokens } from '../controllers/importController.js';
+import verifyApiKey from '../middleware/verifyApiKey.js';
 const router = express.Router();
+
+// API key access
+router.get('/', verifyApiKey('read:tokens'), getTokens);
+router.post(
+  '/',
+  verifyApiKey('write:tokens'),
+  [
+    body('name').isString().notEmpty(),
+    body('value').isString().notEmpty(),
+  ],
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
+    next();
+  },
+  createToken
+);
+
+router.put('/:id', verifyApiKey('write:tokens'), updateToken);
+router.delete('/:id', verifyApiKey('write:tokens'), deleteToken);
 
 // ‣ GET   /api/tokens
 // ‣ POST  /api/tokens

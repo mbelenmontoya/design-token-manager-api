@@ -11,6 +11,7 @@ import swaggerUi from 'swagger-ui-express';
 import categoryRoutes from './routes/categories.js';
 import invitationRoutes from './routes/invitations.js';
 import membershipRoutes from './routes/memberships.js';
+import apiKeyRoutes from './routes/apiKeys.js';
 
 
 dotenv.config();
@@ -82,6 +83,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/categories', categoryRoutes);
 app.use('/api', invitationRoutes);
 app.use('/api/memberships', membershipRoutes);
+app.use('/api/api-keys', apiKeyRoutes);
 
 
 // 5) Health‐check
