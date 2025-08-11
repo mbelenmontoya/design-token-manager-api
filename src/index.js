@@ -9,6 +9,8 @@ import authRoutes from './routes/auth.js';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import categoryRoutes from './routes/categories.js';
+import invitationRoutes from './routes/invitations.js';
+import membershipRoutes from './routes/memberships.js';
 
 
 dotenv.config();
@@ -78,6 +80,8 @@ app.use('/api/tokens', tokenRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/categories', categoryRoutes);
+app.use('/api', invitationRoutes);
+app.use('/api/memberships', membershipRoutes);
 
 
 // 5) Health‐check
