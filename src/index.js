@@ -43,6 +43,8 @@ const swaggerSpec = swaggerJSDoc({
           type: 'object',
           properties: {
             _id: { type: 'string' },
+            tenant: { type: 'string' },
+            project: { type: 'string' },
             name: { type: 'string' },
             value: { type: 'string' },
             category: { type: 'string' },

@@ -8,7 +8,7 @@ await connectDB();
 
 const exists = await User.findOne({ username: 'admin' });
 if (!exists) {
-  await User.create({ username: 'admin', password: 'Admin#123', role: 'admin' });
+  await User.create({ username: 'admin', password: 'Admin#123' });
   console.log('✅ Admin user created: admin / Admin#123');
 } else {
   console.log('ℹ️  Admin user already exists');

@@ -20,8 +20,8 @@ export const importTokens = async (req, res) => {
       await Category.updateOne({ name: category }, { name: category }, { upsert: true });
 
       const result = await Token.findOneAndUpdate(
-        { name },
-        { name, value, category, description },
+        { name, tenant: req.tenantId, project: req.projectId },
+        { tenant: req.tenantId, project: req.projectId, name, value, category, description },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
       if (result.createdAt === result.updatedAt) created++;

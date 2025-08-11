@@ -13,6 +13,8 @@ import {
 } from '../controllers/tokenController.js';
 import { body, validationResult } from 'express-validator';
 import verifyJWT from '../middleware/verifyJWT.js';
+import tenantContext from '../middleware/tenantContext.js';
+import requireRole from '../middleware/requireRole.js';
 import { importTokens } from '../controllers/importController.js';
 const router = express.Router();
 
@@ -63,7 +65,7 @@ router
  *                   items:
  *                     $ref: '#/components/schemas/Token'
  */
-  .get(getTokens)  
+  .get(verifyJWT, tenantContext, getTokens)
 /**
  * @swagger
  * /api/tokens:
@@ -87,6 +89,8 @@ router
  *         description: Validation error
  */  
   .post(verifyJWT,
+    tenantContext,
+    requireRole(['admin','editor']),
     [
         body('name').isString().notEmpty(),
         body('value').isString().notEmpty(),
@@ -134,7 +138,7 @@ router
  *       404:
  *         description: Token not found
  */
-  .put(verifyJWT, updateToken)
+  .put(verifyJWT, tenantContext, requireRole(['admin','editor']), updateToken)
   /**
  * @swagger
  * /api/tokens/{id}:
@@ -161,7 +165,7 @@ router
  *       404:
  *         description: Token not found
  */
-  .delete(verifyJWT, deleteToken);
+  .delete(verifyJWT, tenantContext, requireRole(['admin','editor']), deleteToken);
   /**
  * @swagger
  * /api/tokens/import:
@@ -198,7 +202,7 @@ router
  *                       error:
  *                         type: string
  */
-  router.post('/import', verifyJWT, importTokens);
+  router.post('/import', verifyJWT, tenantContext, requireRole(['admin','editor']), importTokens);
 
 
 export default router;

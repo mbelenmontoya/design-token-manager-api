@@ -11,7 +11,8 @@ export const getTokens = async (req, res) => {
   const category = req.query.category;
 
   // 2. Build the filter
-  const filter = category ? { category } : {};
+  const filter = { tenant: req.tenantId, project: req.projectId };
+  if (category) filter.category = category;
 
   // 3. Get total count before pagination
   const total = await Token.countDocuments(filter);
@@ -38,12 +39,18 @@ export const createToken = async (req, res) => {
   // Upsert category if missing
   await Category.updateOne({ name: category }, { name: category }, { upsert: true });
 
-  const exists = await Token.findOne({ name });
+  const exists = await Token.findOne({ name, tenant: req.tenantId, project: req.projectId });
   if (exists) {
     return res.status(400).json({ message: 'Token with that name already exists' });
   }
-
-  const token = await Token.create({ name, value, category, description });
+  const token = await Token.create({
+    tenant: req.tenantId,
+    project: req.projectId,
+    name,
+    value,
+    category,
+    description
+  });
   res.status(201).json(token);
 };
 
@@ -51,7 +58,7 @@ export const createToken = async (req, res) => {
 // @route   PUT /api/tokens/:id
 // @access  Public
 export const updateToken = async (req, res) => {
-  const token = await Token.findById(req.params.id);
+  const token = await Token.findOne({ _id: req.params.id, tenant: req.tenantId, project: req.projectId });
   if (!token) {
     return res.status(404).json({ message: 'Token not found' });
   }
@@ -66,7 +73,7 @@ export const updateToken = async (req, res) => {
 // @access  Public
 export const deleteToken = async (req, res, next) => {
     try {
-        const deleted = await Token.findByIdAndDelete(req.params.id);
+        const deleted = await Token.findOneAndDelete({ _id: req.params.id, tenant: req.tenantId, project: req.projectId });
         if (!deleted) {
           return res.status(404).json({ message: 'Token not found' });
         }
