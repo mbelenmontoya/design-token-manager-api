@@ -7,7 +7,7 @@ ENV_FILE=".env"
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "❌ .env file not found" >&2
-  exit 1
+  return 1
 fi
 
 # Load variables
@@ -25,7 +25,7 @@ done
 if [ ${#missing[@]} -ne 0 ]; then
   echo "Missing required env vars: ${missing[*]}" >&2
   echo "Provide them in $ENV_FILE" >&2
-  exit 1
+  return 1
 fi
 
 stripe_missing=()
@@ -40,5 +40,5 @@ if [ ${#stripe_missing[@]} -ne 0 ]; then
   export SMOKE_STRIPE=skip
 fi
 
-exit 0
+return 0
 
