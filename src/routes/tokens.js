@@ -57,12 +57,16 @@ router.delete('/:id', verifyApiKey('write:tokens'), deleteToken);
 // ‣ POST  /api/tokens
 router
   .route('/')
-  /**
+ /**
  * @swagger
  * /api/tokens:
  *   get:
  *     summary: Get paginated list of tokens
  *     tags: [Tokens]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     description: "Requires `read:tokens` scope and `Authorization: Bearer <apiKey>`"
  *     parameters:
  *       - in: query
  *         name: page
@@ -107,6 +111,10 @@ router
  *   post:
  *     summary: Create a new token
  *     tags: [Tokens]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     description: "Requires `write:tokens` scope and `Authorization: Bearer <apiKey>`"
  *     requestBody:
  *       required: true
  *       content:
@@ -150,6 +158,10 @@ router
  *   put:
  *     summary: Update a token by ID
  *     tags: [Tokens]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     description: "Requires `write:tokens` scope and `Authorization: Bearer <apiKey>`"
  *     parameters:
  *       - in: path
  *         name: id
@@ -180,6 +192,10 @@ router
  *   delete:
  *     summary: Delete a token by ID
  *     tags: [Tokens]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     description: "Requires `write:tokens` scope and `Authorization: Bearer <apiKey>`"
  *     parameters:
  *       - in: path
  *         name: id
