@@ -29,7 +29,7 @@ A RESTful API for managing design tokens (colors, spacing, fonts, shadows, etc.)
 * **JWT** authentication (login endpoint)
 * **Input validation** and centralized error handling
 * **Pagination & filtering** on token listing
-* **Interactive Swagger** UI at `/api-docs`
+* **Interactive Swagger** UI at `/api-docs/v1`
 
 ---
 
@@ -99,7 +99,7 @@ npm run dev
 Once running, open:
 
 ```
-http://localhost:4000/api-docs
+http://localhost:4000/api-docs/v1
 ```
 
 Browse and test all endpoints interactively.
@@ -110,29 +110,29 @@ Browse and test all endpoints interactively.
 
 ### Auth
 
-* `POST /api/auth/login`
+* `POST /api/v1/auth/login`
 
   * **Body**: `{ "username": string, "password": string }`
   * **Response**: `{ "token": string }`
 
 ### Tokens
 
-* `GET /api/tokens`
+* `GET /api/v1/tokens`
 
   * Query params: `page`, `limit`, `category`
   * Returns: `{ total, page, limit, pages, tokens: [] }`
 
-* `POST /api/tokens` (JWT required)
+* `POST /api/v1/tokens` (JWT required)
 
   * **Body**: `{ "name": string, "value": string, "category": string, "description"?: string }`
   * **Response**: Created token object
 
-* `PUT /api/tokens/:id` (JWT required)
+* `PUT /api/v1/tokens/:id` (JWT required)
 
   * **Body**: Partial token fields
   * **Response**: Updated token object
 
-* `DELETE /api/tokens/:id` (JWT required)
+* `DELETE /api/v1/tokens/:id` (JWT required)
 
   * **Response**: `{ "message": "Token removed" }`
 

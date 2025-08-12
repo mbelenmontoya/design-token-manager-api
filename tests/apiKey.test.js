@@ -49,7 +49,7 @@ describe('API key authentication', () => {
     await Membership.create({ user: admin._id, tenant: tenant._id, role: 'admin' });
     adminToken = jwt.sign({ id: admin._id }, process.env.JWT_SECRET);
     const res = await agent
-      .post('/api/api-keys')
+      .post('/api/v1/api-keys')
       .set('Authorization', `Bearer ${adminToken}`)
       .set('x-tenant-id', tenant._id.toString())
       .set('x-project-id', project._id.toString())
@@ -60,14 +60,14 @@ describe('API key authentication', () => {
 
   it('allows creating and reading tokens via API key', async () => {
     const createRes = await agent
-      .post('/api/tokens')
+      .post('/api/v1/tokens')
       .set('Authorization', `Bearer ${apiKey}`)
       .send({ name: 'color.primary', value: '#fff' });
     expect(createRes.status).toBe(201);
     tokenId = createRes.body._id;
 
     const getRes = await agent
-      .get('/api/tokens')
+      .get('/api/v1/tokens')
       .set('Authorization', `Bearer ${apiKey}`);
     expect(getRes.status).toBe(200);
     expect(getRes.body.tokens.length).toBe(1);
@@ -75,19 +75,19 @@ describe('API key authentication', () => {
 
   it('rotates key and invalidates old key', async () => {
     const rotateRes = await agent
-      .post(`/api/api-keys/${apiKeyId}/rotate`)
+      .post(`/api/v1/api-keys/${apiKeyId}/rotate`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('x-tenant-id', tenant._id.toString())
       .set('x-project-id', project._id.toString());
     const newKey = rotateRes.body.apiKey;
 
     const oldRes = await agent
-      .get('/api/tokens')
+      .get('/api/v1/tokens')
       .set('Authorization', `Bearer ${apiKey}`);
     expect(oldRes.status).toBe(401);
 
     const newRes = await agent
-      .get('/api/tokens')
+      .get('/api/v1/tokens')
       .set('Authorization', `Bearer ${newKey}`);
     expect(newRes.status).toBe(200);
     apiKey = newKey;
@@ -95,12 +95,12 @@ describe('API key authentication', () => {
 
   it('handles concurrent rotations with conflict response', async () => {
     const reqA = agent
-      .post(`/api/api-keys/${apiKeyId}/rotate`)
+      .post(`/api/v1/api-keys/${apiKeyId}/rotate`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('x-tenant-id', tenant._id.toString())
       .set('x-project-id', project._id.toString());
     const reqB = agent
-      .post(`/api/api-keys/${apiKeyId}/rotate`)
+      .post(`/api/v1/api-keys/${apiKeyId}/rotate`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('x-tenant-id', tenant._id.toString())
       .set('x-project-id', project._id.toString());
@@ -113,7 +113,7 @@ describe('API key authentication', () => {
 
   it('rejects write operations without write scope', async () => {
     const resKey = await agent
-      .post('/api/api-keys')
+      .post('/api/v1/api-keys')
       .set('Authorization', `Bearer ${adminToken}`)
       .set('x-tenant-id', tenant._id.toString())
       .set('x-project-id', project._id.toString())
@@ -121,26 +121,26 @@ describe('API key authentication', () => {
     const readOnlyKey = resKey.body.apiKey;
 
     const createRes = await agent
-      .post('/api/tokens')
+      .post('/api/v1/tokens')
       .set('Authorization', `Bearer ${readOnlyKey}`)
       .send({ name: 'color.secondary', value: '#000' });
     expect(createRes.status).toBe(403);
 
     const updateRes = await agent
-      .put(`/api/tokens/${tokenId}`)
+      .put(`/api/v1/tokens/${tokenId}`)
       .set('Authorization', `Bearer ${readOnlyKey}`)
       .send({ value: '#000' });
     expect(updateRes.status).toBe(403);
 
     const deleteRes = await agent
-      .delete(`/api/tokens/${tokenId}`)
+      .delete(`/api/v1/tokens/${tokenId}`)
       .set('Authorization', `Bearer ${readOnlyKey}`);
     expect(deleteRes.status).toBe(403);
   });
 
   it('rejects API key tied to another project or tenant', async () => {
     const res = await agent
-      .get('/api/tokens')
+      .get('/api/v1/tokens')
       .set('Authorization', `Bearer ${apiKey}`)
       .set('x-tenant-id', otherTenant._id.toString())
       .set('x-project-id', otherProject._id.toString());
@@ -149,29 +149,29 @@ describe('API key authentication', () => {
 
   it('returns 401 for invalid API key', async () => {
     const res = await agent
-      .get('/api/tokens')
+      .get('/api/v1/tokens')
       .set('Authorization', 'Bearer invalid');
     expect(res.status).toBe(401);
   });
 
   it('enforces rate limiting', async () => {
     for (let i = 0; i < 5; i++) {
-      await agent.get('/api/tokens').set('Authorization', `Bearer ${apiKey}`);
+      await agent.get('/api/v1/tokens').set('Authorization', `Bearer ${apiKey}`);
     }
-    const res = await agent.get('/api/tokens').set('Authorization', `Bearer ${apiKey}`);
+    const res = await agent.get('/api/v1/tokens').set('Authorization', `Bearer ${apiKey}`);
     expect(res.status).toBe(429);
   });
 
   it('revokes key', async () => {
     const revokeRes = await agent
-      .delete(`/api/api-keys/${apiKeyId}`)
+      .delete(`/api/v1/api-keys/${apiKeyId}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('x-tenant-id', tenant._id.toString())
       .set('x-project-id', project._id.toString());
     expect(revokeRes.status).toBe(200);
 
     const res = await agent
-      .get('/api/tokens')
+      .get('/api/v1/tokens')
       .set('Authorization', `Bearer ${apiKey}`);
     expect(res.status).toBe(401);
   });

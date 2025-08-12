@@ -26,8 +26,9 @@ const router = express.Router();
  * `Authorization: Bearer <apiKey>`.
  *
  * Required scopes:
- *   - `read:tokens` for `GET /api/tokens`
- *   - `write:tokens` for `POST`, `PUT`, and `DELETE /api/tokens`
+ *   - `read:tokens` for `GET /api/v1/tokens`
+ *   - `write:tokens` for `POST`, `PUT`, and `DELETE /api/v1/tokens`
+
  *
  * API keys are scoped to a single project and cannot access tokens outside
  * of that project.
@@ -53,13 +54,14 @@ router.post(
 router.put('/:id', verifyApiKey('write:tokens'), updateToken);
 router.delete('/:id', verifyApiKey('write:tokens'), deleteToken);
 
-// ‣ GET   /api/tokens
-// ‣ POST  /api/tokens
+// ‣ GET   /api/v1/tokens
+// ‣ POST  /api/v1/tokens
+
 router
   .route('/')
  /**
  * @swagger
- * /api/tokens:
+ * /api/v1/tokens:
  *   get:
  *     summary: Get paginated list of tokens
  *     tags: [Tokens]
@@ -107,7 +109,7 @@ router
   .get(verifyJWT, tenantContext, getTokens)
 /**
  * @swagger
- * /api/tokens:
+ * /api/v1/tokens:
  *   post:
  *     summary: Create a new token
  *     tags: [Tokens]
@@ -148,13 +150,13 @@ router
     createToken
   );
 
-// ‣ PUT    /api/tokens/:id
-// ‣ DELETE /api/tokens/:id
+// ‣ PUT    /api/v1/tokens/:id
+// ‣ DELETE /api/v1/tokens/:id
 router
   .route('/:id')
   /**
  * @swagger
- * /api/tokens/{id}:
+ * /api/v1/tokens/{id}:
  *   put:
  *     summary: Update a token by ID
  *     tags: [Tokens]
@@ -188,7 +190,7 @@ router
   .put(verifyJWT, tenantContext, requireRole(['admin','editor']), updateToken)
   /**
  * @swagger
- * /api/tokens/{id}:
+ * /api/v1/tokens/{id}:
  *   delete:
  *     summary: Delete a token by ID
  *     tags: [Tokens]
@@ -219,7 +221,7 @@ router
   .delete(verifyJWT, tenantContext, requireRole(['admin','editor']), deleteToken);
   /**
  * @swagger
- * /api/tokens/import:
+ * /api/v1/tokens/import:
  *   post:
  *     summary: Bulk import or update tokens
  *     tags: [Tokens]

@@ -29,7 +29,7 @@ app.use(morgan('dev'));
 // 3) JSON parser
 app.use(express.json());  // parse JSON bodies
 
-const swaggerSpec = swaggerJSDoc({
+const swaggerSpecV1 = swaggerJSDoc({
   definition: {
     openapi: '3.0.0',
     info: {
@@ -38,7 +38,7 @@ const swaggerSpec = swaggerJSDoc({
       description: 'CRUD for design tokens, with JWT auth',
     },
     servers: [
-      { url: 'http://localhost:4000', description: 'Local server' }
+      { url: 'http://localhost:4000/api/v1', description: 'v1' },
     ],
     components: {
       securitySchemes: {
@@ -78,7 +78,7 @@ const swaggerSpec = swaggerJSDoc({
             value: { type: 'string' },
             category: {
               type: 'string',
-              enum: ['color', 'spacing', 'font', 'shadow', 'other']
+              enum: ['color', 'spacing', 'font', 'shadow', 'other'],
             },
             description: { type: 'string' },
           },
@@ -135,13 +135,20 @@ const swaggerSpec = swaggerJSDoc({
 });
 
 // 4) Routes
+app.use('/api/v1/tokens', tokenRoutes);
+// Backwards compatibility for unversioned path
 app.use('/api/tokens', tokenRoutes);
+app.use('/api/v1/auth', authRoutes);
+// Backwards compatibility for auth login
 app.use('/api/auth', authRoutes);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use('/api/categories', categoryRoutes);
-app.use('/api', invitationRoutes);
-app.use('/api/memberships', membershipRoutes);
+app.use('/api/v1/categories', categoryRoutes);
+app.use('/api/v1', invitationRoutes);
+app.use('/api/v1/memberships', membershipRoutes);
+app.use('/api/v1/api-keys', apiKeyRoutes);
+// Backwards compatibility for API key routes
 app.use('/api/api-keys', apiKeyRoutes);
+app.use('/api-docs/v1', swaggerUi.serve, swaggerUi.setup(swaggerSpecV1));
+
 
 
 // 5) Health‐check
