@@ -22,7 +22,8 @@ export async function createInvitation(req, res, next) {
       inviter: req.user.id,
       expiresAt
     });
-    const link = `/api/invitations/${token}/accept`;
+    // Return API link matching v1 routing so clients can follow directly
+    const link = `/api/v1/invitations/${token}/accept`;
     res.status(201).json({ invitation: { id: invitation._id, email, role, link } });
   } catch (err) {
     next(err);
