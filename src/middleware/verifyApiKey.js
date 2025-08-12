@@ -18,6 +18,14 @@ export default function verifyApiKey(requiredScope) {
     if (!apiKey) {
       return res.status(401).json({ message: 'Invalid API key' });
     }
+    const headerTenant = req.header('x-tenant-id');
+    const headerProject = req.header('x-project-id');
+    if (
+      (headerTenant && headerTenant !== apiKey.tenant_id.toString()) ||
+      (headerProject && headerProject !== apiKey.project_id.toString())
+    ) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
     // Rate limiting
     const now = Date.now();
     const keyId = apiKey._id.toString();
