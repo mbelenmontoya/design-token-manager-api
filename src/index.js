@@ -15,6 +15,7 @@ import versioning from './middleware/versioning.js';
 import statusRoutes from './routes/status.js';
 import releaseRoutes from './routes/releases.js';
 import apiKeyRoutes from './routes/apiKeys.js';
+import mongoose from 'mongoose';
 
 
 dotenv.config();
@@ -162,6 +163,11 @@ app.use('/api-docs/v1', swaggerUi.serve, swaggerUi.setup(swaggerSpecV1));
 // 5) Health‐check
 app.get('/', (req, res) => {
   res.send('Design Token Manager API is running 🚀');
+});
+
+app.get('/health', (_req, res) => {
+  const connected = mongoose.connection.readyState === 1;
+  res.status(connected ? 200 : 503).json({ ok: connected, mongo: { connected } });
 });
 
 // 6) Start server
