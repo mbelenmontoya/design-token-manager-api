@@ -9,7 +9,9 @@ export default async () => {
   }
 
   if (!process.env.MONGO_URI) {
-    const mongod = await MongoMemoryServer.create();
+    const mongod = await MongoMemoryServer.create({
+      binary: { version: '7.0.5' },
+    });
     global.__MONGOD__ = mongod;
     process.env.MONGO_URI = mongod.getUri();
   }
