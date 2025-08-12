@@ -11,6 +11,8 @@ import swaggerUi from 'swagger-ui-express';
 import categoryRoutes from './routes/categories.js';
 import invitationRoutes from './routes/invitations.js';
 import membershipRoutes from './routes/memberships.js';
+import versioning from './middleware/versioning.js';
+import statusRoutes from './routes/status.js';
 
 
 dotenv.config();
@@ -27,6 +29,9 @@ app.use(morgan('dev'));
 
 // 3) JSON parser
 app.use(express.json());  // parse JSON bodies
+
+// Versioning headers
+app.use(versioning);
 
 const swaggerSpec = swaggerJSDoc({
   definition: {
@@ -82,6 +87,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/categories', categoryRoutes);
 app.use('/api', invitationRoutes);
 app.use('/api/memberships', membershipRoutes);
+app.use('/status', statusRoutes);
 
 
 // 5) Health‐check
