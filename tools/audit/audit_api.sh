@@ -16,9 +16,17 @@ log "# API Audit Report"
 log "Generated on $(date)"
 log ""
 
-# Fail fast on merge conflict markers
-if rg -l "(<<<<<<<|=======|>>>>>>>)" --hidden --no-ignore -g "!node_modules" | grep -q .; then
-  log "❌ Merge conflict markers detected"; exit 1;
+# Fail fast on merge conflict markers. Prefer ripgrep but fall back to grep if unavailable.
+if command -v rg >/dev/null 2>&1; then
+  conflicts=$(rg -l "(<<<<<<<|=======|>>>>>>>)" --hidden --no-ignore -g "!node_modules" || true)
+else
+  conflicts=$(grep -R -l -E "(<<<<<<<|=======|>>>>>>>)" --exclude-dir='.git' --exclude-dir='node_modules' . || true)
+fi
+
+if [ -n "$conflicts" ]; then
+  log "❌ Merge conflict markers detected"
+  echo "$conflicts" | tee -a "$REPORT"
+  exit 1
 else
   log "✅ No merge conflict markers"
 fi
