@@ -28,6 +28,7 @@ const router = express.Router();
  * Required scopes:
  *   - `read:tokens` for `GET /api/v1/tokens`
  *   - `write:tokens` for `POST`, `PUT`, and `DELETE /api/v1/tokens`
+
  *
  * API keys are scoped to a single project and cannot access tokens outside
  * of that project.
@@ -55,6 +56,7 @@ router.delete('/:id', verifyApiKey('write:tokens'), deleteToken);
 
 // ‣ GET   /api/v1/tokens
 // ‣ POST  /api/v1/tokens
+
 router
   .route('/')
  /**
