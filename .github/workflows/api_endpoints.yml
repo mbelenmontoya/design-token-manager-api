@@ -1,20 +1,19 @@
-name: API Stage1
+name: API Endpoints Check
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - 'src/**'
-      - 'config/**'
-      - 'scripts/**'
-      - 'tests/**'
+      - 'src/routes/**'
+      - 'src/controllers/**'
+      - 'tests/integration/endpoints/**'
       - 'package.json'
       - 'package-lock.json'
-      - '.github/workflows/api_stage1.yml'
+      - '.github/workflows/api_endpoints.yml'
   workflow_dispatch:
 
 jobs:
-  stage1:
+  endpoints:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     services:
@@ -35,9 +34,9 @@ jobs:
       - run: npm ci
       - run: node src/scripts/seedUser.js
       - run: mkdir -p reports
-      - run: npm run test:stage1 -- --json --outputFile=reports/stage1.json
+      - run: npm run test:endpoints -- --json --outputFile=reports/endpoints.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stage1-test-report
-          path: reports/stage1.json
+          name: endpoints-test-report
+          path: reports/endpoints.json
