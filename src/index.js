@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import connectDB from './config/db.js';
 import tokenRoutes from './routes/tokens.js';
 import errorHandler from './middleware/errorHandler.js';
@@ -15,6 +16,7 @@ import versioning from './middleware/versioning.js';
 import statusRoutes from './routes/status.js';
 import releaseRoutes from './routes/releases.js';
 import apiKeyRoutes from './routes/apiKeys.js';
+import pkg from '../package.json' with { type: 'json' };
 
 
 dotenv.config();
@@ -161,7 +163,20 @@ app.use('/api-docs/v1', swaggerUi.serve, swaggerUi.setup(swaggerSpecV1));
 
 // 5) Health‐check
 app.get('/', (req, res) => {
-  res.send('Design Token Manager API is running 🚀');
+  const connected = mongoose.connection.readyState === 1;
+  const payload = {
+    ok: connected,
+    uptime: Math.round(process.uptime()),
+    version: pkg.version,
+    mongo: { connected }
+  };
+  if (connected) {
+    payload.mongo.host = mongoose.connection.host;
+    payload.mongo.db = mongoose.connection.name;
+  } else {
+    payload.reason = 'MongoDB not connected';
+  }
+  res.status(connected ? 200 : 500).json(payload);
 });
 
 // 6) Start server

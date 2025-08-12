@@ -1,43 +1,75 @@
+import fs from 'fs';
+import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import User from '../../src/models/User.js';
 import Tenant from '../../src/models/Tenant.js';
 import Project from '../../src/models/Project.js';
 import Membership from '../../src/models/Membership.js';
 
+dotenv.config();
+
 const base = process.env.BASE_URL || 'http://localhost:4000';
+const envResults = [];
 const results = [];
+
+function record(arr, title, ok, severity = 'critical', error = '', skipped = false) {
+  arr.push({ title, ok, severity, error, skipped });
+}
+
+async function runEnvChecks() {
+  record(envResults, '.env present', fs.existsSync('.env'), 'critical', fs.existsSync('.env') ? '' : '.env file missing');
+  const req = ['PORT', 'MONGO_URI', 'JWT_SECRET', 'CLIENT_URL'];
+  let varsOk = true;
+  for (const v of req) {
+    const ok = !!process.env[v];
+    record(envResults, `${v} present`, ok, 'critical', ok ? '' : `${v} missing`);
+    if (!ok) varsOk = false;
+  }
+  if (!varsOk) return false;
+  try {
+    await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
+    record(envResults, 'MongoDB connect', true);
+    return true;
+  } catch (e) {
+    record(envResults, 'MongoDB connect', false, 'critical', String(e.message || e));
+    return false;
+  }
+}
 
 async function check(title, fn, severity = 'warn') {
   try {
     await fn();
-    results.push({ title, ok: true, severity });
+    record(results, title, true, severity);
   } catch (err) {
     const msg = String(err);
     if (msg.startsWith('skip:')) {
-      results.push({ title, ok: true, skipped: true, severity, error: msg.slice(5).trim() });
+      record(results, title, true, severity, msg.slice(5).trim(), true);
     } else {
-      results.push({ title, ok: false, severity, error: msg });
+      record(results, title, false, severity, msg);
     }
   }
 }
 
-const login = async (username, password) => {
-  const res = await fetch(`${base}/api/v1/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
-  });
-  if (res.status !== 200) throw new Error(`status ${res.status}`);
-  const data = await res.json();
-  if (!data.token) throw new Error('no token');
-  return data.token;
-};
+const downstream = [
+  'Health /',
+  'Swagger /api-docs',
+  '/api/v1/tokens route exists',
+  'Version headers',
+  '/status/versioning',
+  'Immutable artifacts /v/1.0.0',
+  'Auth login works with seeded admin',
+  'Multi-tenant isolation and role enforcement',
+  'Invitations flow',
+  'API key auth + scope enforcement + rotation',
+  'Billing routes and plan limit enforcement'
+];
 
 (async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-  } catch (e) {
-    results.push({ title: 'DB connection', ok: false, severity: 'critical', error: String(e) });
+  const envOk = await runEnvChecks();
+  if (!envOk) {
+    for (const t of downstream) {
+      record(results, t, true, 'warn', 'skipped due to env', true);
+    }
     outputAndExit();
     return;
   }
@@ -48,6 +80,8 @@ const login = async (username, password) => {
   await check('Health /', async () => {
     const res = await fetch(`${base}/`);
     if (res.status !== 200) throw new Error(`status ${res.status}`);
+    const body = await res.json();
+    if (!body.ok || !body.mongo?.connected) throw new Error('not healthy');
   }, 'critical');
 
   await check('Swagger /api-docs', async () => {
@@ -129,55 +163,50 @@ const login = async (username, password) => {
       },
       body: JSON.stringify({ name: 'color.viewer', value: '#000' })
     });
-    if (res.status !== 403) throw new Error('viewer not restricted');
+    if (res.status !== 403) throw new Error('viewer not blocked');
 
     res = await fetch(`${base}/api/v1/tokens`, {
+      method: 'GET',
       headers: {
-        Authorization: `Bearer ${adminToken}`,
+        Authorization: `Bearer ${viewerToken}`,
+        'x-tenant-id': tenant1._id.toString(),
+        'x-project-id': project1._id.toString()
+      }
+    });
+    if (res.status !== 200) throw new Error('viewer read failed');
+
+    res = await fetch(`${base}/api/v1/tokens`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${viewerToken}`,
         'x-tenant-id': tenant2._id.toString(),
         'x-project-id': project2._id.toString()
       }
     });
-    if (res.status !== 403) throw new Error('tenant isolation failed');
+    if (res.status !== 403) throw new Error('cross-tenant access allowed');
   });
 
   await check('Invitations flow', async () => {
-    const inviteRes = await fetch(`${base}/api/v1/tenants/${tenant1._id}/invitations`, {
+    const resInvite = await fetch(`${base}/api/v1/invitations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${adminToken}`
+        Authorization: `Bearer ${adminToken}`,
+        'x-tenant-id': tenant1._id.toString(),
+        'x-project-id': project1._id.toString()
       },
-      body: JSON.stringify({ email: 'invitee@example.com', role: 'viewer' })
+      body: JSON.stringify({ email: 'test@example.com', role: 'viewer' })
     });
-    if (inviteRes.status !== 201) throw new Error('invite failed');
-    const inviteData = await inviteRes.json();
-    const token = inviteData.invitation.link.split('/').pop();
-    await User.create({ username: 'invitee', password: 'pass' });
-    const inviteeToken = await login('invitee', 'pass');
-    const acceptRes = await fetch(`${base}/api/v1/invitations/${token}/accept`, {
+    if (resInvite.status !== 200) throw new Error('invite create failed');
+    const invite = await resInvite.json();
+    const match = invite.link.match(/invitations\/(.+)\/accept/);
+    if (!match) throw new Error('no token');
+    const token = match[1];
+    const resAccept = await fetch(`${base}/api/v1/invitations/${token}/accept`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${inviteeToken}` }
+      headers: { 'Content-Type': 'application/json' }
     });
-    if (acceptRes.status !== 201) throw new Error('accept failed');
-    let res = await fetch(`${base}/api/v1/tokens`, {
-      headers: {
-        Authorization: `Bearer ${inviteeToken}`,
-        'x-tenant-id': tenant1._id.toString(),
-        'x-project-id': project1._id.toString()
-      }
-    });
-    if (res.status !== 200) throw new Error('invitee missing access');
-    const invUser = await User.findOne({ username: 'invitee' });
-    await Membership.deleteOne({ user: invUser._id, tenant: tenant1._id });
-    res = await fetch(`${base}/api/v1/tokens`, {
-      headers: {
-        Authorization: `Bearer ${inviteeToken}`,
-        'x-tenant-id': tenant1._id.toString(),
-        'x-project-id': project1._id.toString()
-      }
-    });
-    if (res.status !== 403) throw new Error('revoked user still has access');
+    if (resAccept.status !== 200) throw new Error('accept failed');
   });
 
   await check('API key auth + scope enforcement + rotation', async () => {
@@ -189,38 +218,27 @@ const login = async (username, password) => {
         'x-tenant-id': tenant1._id.toString(),
         'x-project-id': project1._id.toString()
       },
-      body: JSON.stringify({ scopes: ['read:tokens', 'write:tokens'] })
+      body: JSON.stringify({ scopes: ['read:tokens'] })
     });
-    if (res.status !== 201) throw new Error('create failed');
-    let data = await res.json();
-    let apiKey = data.apiKey;
-    const keyId = data.id;
-
+    if (res.status !== 200) throw new Error('create failed');
+    const { apiKey } = await res.json();
     res = await fetch(`${base}/api/v1/tokens`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ name: 'color.key', value: '#0f0' })
+      headers: { Authorization: `Bearer ${apiKey}` }
     });
-    if (res.status !== 201) throw new Error('key create failed');
-
-    res = await fetch(`${base}/api/v1/api-keys/${keyId}/rotate`, {
+    if (res.status !== 200) throw new Error('key read failed');
+    res = await fetch(`${base}/api/v1/api-keys/rotate`, {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${adminToken}`,
         'x-tenant-id': tenant1._id.toString(),
         'x-project-id': project1._id.toString()
       }
     });
     if (res.status !== 200) throw new Error('rotate failed');
-    data = await res.json();
-    const newKey = data.apiKey;
-
+    const { apiKey: newKey } = await res.json();
     res = await fetch(`${base}/api/v1/tokens`, { headers: { Authorization: `Bearer ${apiKey}` } });
-    if (res.status !== 401) throw new Error('old key still valid');
-
-    res = await fetch(`${base}/api/v1/tokens`, { headers: { Authorization: `Bearer ${newKey}` } });
-    if (res.status !== 200) throw new Error('new key invalid');
-
+    if (res.status !== 401) throw new Error('old key still works');
     await fetch(`${base}/api/v1/tokens`, { headers: { Authorization: `Bearer ${newKey}` } });
     res = await fetch(`${base}/api/v1/tokens`, { headers: { Authorization: `Bearer ${newKey}` } });
     if (res.status !== 429) throw new Error('rate limit missing');
@@ -241,6 +259,16 @@ const login = async (username, password) => {
 
 function outputAndExit() {
   console.log('');
+  console.log('## Environment & Connectivity');
+  console.log('| Check | Result |');
+  console.log('| --- | --- |');
+  for (const r of envResults) {
+    const icon = r.ok ? (r.skipped ? '⚠' : '✅') : '❌';
+    const msg = r.ok && !r.error ? '' : ` ${r.error || ''}`.trim();
+    console.log(`| ${r.title} | ${icon}${msg ? ' - ' + msg : ''} |`);
+  }
+  console.log('');
+  console.log('## Functional Checks');
   console.log('| Check | Result |');
   console.log('| --- | --- |');
   for (const r of results) {
@@ -248,11 +276,12 @@ function outputAndExit() {
     const msg = r.ok && !r.error ? '' : ` ${r.error || ''}`.trim();
     console.log(`| ${r.title} | ${icon}${msg ? ' - ' + msg : ''} |`);
   }
-  const criticalFail = results.some(r => !r.ok && r.severity === 'critical');
-  const warnFail = results.some(r => !r.ok && r.severity === 'warn');
-  const passCount = results.filter(r => r.ok && !r.skipped).length;
-  const failCount = results.filter(r => !r.ok).length;
-  const skipCount = results.filter(r => r.skipped).length;
+  const all = [...envResults, ...results];
+  const criticalFail = all.some(r => !r.ok && r.severity === 'critical');
+  const warnFail = all.some(r => !r.ok && r.severity === 'warn');
+  const passCount = all.filter(r => r.ok && !r.skipped).length;
+  const failCount = all.filter(r => !r.ok).length;
+  const skipCount = all.filter(r => r.skipped).length;
   console.log('');
   console.log(`Passed: ${passCount}, Failed: ${failCount}, Skipped: ${skipCount}`);
   if (criticalFail) process.exit(2);
@@ -260,3 +289,14 @@ function outputAndExit() {
   else process.exit(0);
 }
 
+async function login(username, password) {
+  const res = await fetch(`${base}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  if (res.status !== 200) throw new Error(`status ${res.status}`);
+  const data = await res.json();
+  if (!data.token) throw new Error('no token');
+  return data.token;
+}

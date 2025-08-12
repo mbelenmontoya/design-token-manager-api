@@ -15,16 +15,26 @@ set -a
 source "$ENV_FILE"
 set +a
 
+declare -A examples=(
+  [PORT]="4000"
+  [MONGO_URI]="mongodb+srv://user:pass@cluster.mongodb.net/db"
+  [JWT_SECRET]="supersecret"
+  [CLIENT_URL]="http://localhost:5173"
+)
+
 missing=()
+echo "| Variable | Status | Example |"
+echo "| --- | --- | --- |"
 for var in PORT MONGO_URI JWT_SECRET CLIENT_URL; do
   if [ -z "${!var:-}" ]; then
     missing+=("$var")
+    echo "| $var | MISSING | ${examples[$var]} |"
+  else
+    echo "| $var | OK | ${examples[$var]} |"
   fi
 done
 
 if [ ${#missing[@]} -ne 0 ]; then
-  echo "Missing required env vars: ${missing[*]}" >&2
-  echo "Provide them in $ENV_FILE" >&2
   return 1
 fi
 
