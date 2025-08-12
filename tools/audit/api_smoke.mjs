@@ -1,13 +1,7 @@
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import User from '../../src/models/User.js';
-import Tenant from '../../src/models/Tenant.js';
-import Project from '../../src/models/Project.js';
-import Membership from '../../src/models/Membership.js';
+import bcrypt from 'bcryptjs';
 
-dotenv.config();
-
-const base = process.env.BASE_URL || 'http://localhost:4000';
+const base = process.env.BASE_URL || `http://localhost:${process.env.PORT || 4000}`;
 const results = [];
 
 function record(title, ok, severity = 'warn', error = '', skipped = false) {
@@ -88,111 +82,120 @@ async function check(title, fn, severity = 'warn') {
     adminToken = await login('admin', 'Admin#123');
   });
 
-  await check('Multi-tenant isolation and role enforcement', async () => {
-    tenant1 = await Tenant.create({ name: 'audit-tenant1' });
-    project1 = await Project.create({ name: 'audit-project1', tenant: tenant1._id });
-    tenant2 = await Tenant.create({ name: 'audit-tenant2' });
-    project2 = await Project.create({ name: 'audit-project2', tenant: tenant2._id });
-    const adminUser = await User.findOne({ username: 'admin' });
-    const viewerUser = await User.create({ username: 'audit-viewer', password: 'pass' });
-    await Membership.create({ user: adminUser._id, tenant: tenant1._id, role: 'admin' });
-    await Membership.create({ user: viewerUser._id, tenant: tenant1._id, role: 'viewer' });
-    viewerToken = await login('audit-viewer', 'pass');
+    await check('Multi-tenant isolation and role enforcement', async () => {
+      const db = mongoose.connection.db;
+      const tenants = db.collection('tenants');
+      const projects = db.collection('projects');
+      const users = db.collection('users');
+      const memberships = db.collection('memberships');
+      tenant1 = (await tenants.insertOne({ name: 'audit-tenant1' })).insertedId;
+      project1 = (await projects.insertOne({ name: 'audit-project1', tenant: tenant1 })).insertedId;
+      tenant2 = (await tenants.insertOne({ name: 'audit-tenant2' })).insertedId;
+      project2 = (await projects.insertOne({ name: 'audit-project2', tenant: tenant2 })).insertedId;
+      const adminUser = await users.findOne({ username: 'admin' });
+      const viewerHash = await bcrypt.hash('pass', 10);
+      const viewerUser = (await users.insertOne({ username: 'audit-viewer', password: viewerHash })).insertedId;
+      await memberships.insertMany([
+        { user: adminUser._id, tenant: tenant1, role: 'admin' },
+        { user: viewerUser, tenant: tenant1, role: 'viewer' }
+      ]);
+      const inviteeHash = await bcrypt.hash('pass', 10);
+      await users.insertOne({ username: 'invitee', password: inviteeHash });
+      viewerToken = await login('audit-viewer', 'pass');
 
-    let res = await fetch(`${base}/api/v1/tokens`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${adminToken}`,
-        'x-tenant-id': tenant1._id.toString(),
-        'x-project-id': project1._id.toString()
-      },
-      body: JSON.stringify({ name: 'color.admin', value: '#fff' })
-    });
+      let res = await fetch(`${base}/api/v1/tokens`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          'x-tenant-id': tenant1.toString(),
+          'x-project-id': project1.toString()
+        },
+        body: JSON.stringify({ name: 'color.admin', value: '#fff' })
+      });
     if (res.status !== 201) throw new Error('admin create failed');
 
-    res = await fetch(`${base}/api/v1/tokens`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${viewerToken}`,
-        'x-tenant-id': tenant1._id.toString(),
-        'x-project-id': project1._id.toString()
-      },
-      body: JSON.stringify({ name: 'color.viewer', value: '#000' })
-    });
-    if (res.status !== 403) throw new Error('viewer not blocked');
+      res = await fetch(`${base}/api/v1/tokens`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${viewerToken}`,
+          'x-tenant-id': tenant1.toString(),
+          'x-project-id': project1.toString()
+        },
+        body: JSON.stringify({ name: 'color.viewer', value: '#000' })
+      });
+      if (res.status !== 403) throw new Error('viewer not blocked');
 
-    res = await fetch(`${base}/api/v1/tokens`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${viewerToken}`,
-        'x-tenant-id': tenant1._id.toString(),
-        'x-project-id': project1._id.toString()
-      }
-    });
+      res = await fetch(`${base}/api/v1/tokens`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${viewerToken}`,
+          'x-tenant-id': tenant1.toString(),
+          'x-project-id': project1.toString()
+        }
+      });
     if (res.status !== 200) throw new Error('viewer read failed');
 
-    res = await fetch(`${base}/api/v1/tokens`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${viewerToken}`,
-        'x-tenant-id': tenant2._id.toString(),
-        'x-project-id': project2._id.toString()
-      }
+      res = await fetch(`${base}/api/v1/tokens`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${viewerToken}`,
+          'x-tenant-id': tenant2.toString(),
+          'x-project-id': project2.toString()
+        }
+      });
+      if (res.status !== 403) throw new Error('cross-tenant access allowed');
     });
-    if (res.status !== 403) throw new Error('cross-tenant access allowed');
-  });
 
-  await check('Invitations flow', async () => {
-    const resInvite = await fetch(`${base}/api/v1/invitations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${adminToken}`,
-        'x-tenant-id': tenant1._id.toString(),
-        'x-project-id': project1._id.toString()
-      },
-      body: JSON.stringify({ email: 'test@example.com', role: 'viewer' })
+    await check('Invitations flow', async () => {
+      const resInvite = await fetch(`${base}/api/v1/tenants/${tenant1.toString()}/invitations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({ email: 'invitee', role: 'viewer' })
+      });
+      if (resInvite.status !== 201) throw new Error('invite create failed');
+      const invite = await resInvite.json();
+      const match = invite.invitation.link.match(/invitations\/(.+)\/accept/);
+      if (!match) throw new Error('no token');
+      const token = match[1];
+      const inviteeToken = await login('invitee', 'pass');
+      const resAccept = await fetch(`${base}/api/v1/invitations/${token}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${inviteeToken}` }
+      });
+      if (resAccept.status !== 200) throw new Error('accept failed');
     });
-    if (resInvite.status !== 200) throw new Error('invite create failed');
-    const invite = await resInvite.json();
-    const match = invite.link.match(/invitations\/(.+)\/accept/);
-    if (!match) throw new Error('no token');
-    const token = match[1];
-    const resAccept = await fetch(`${base}/api/v1/invitations/${token}/accept`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    if (resAccept.status !== 200) throw new Error('accept failed');
-  });
 
   await check('API key auth + scope enforcement + rotation', async () => {
-    let res = await fetch(`${base}/api/v1/api-keys`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${adminToken}`,
-        'x-tenant-id': tenant1._id.toString(),
-        'x-project-id': project1._id.toString()
-      },
-      body: JSON.stringify({ scopes: ['read:tokens'] })
-    });
+      let res = await fetch(`${base}/api/v1/api-keys`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          'x-tenant-id': tenant1.toString(),
+          'x-project-id': project1.toString()
+        },
+        body: JSON.stringify({ scopes: ['read:tokens'] })
+      });
     if (res.status !== 200) throw new Error('create failed');
     const { apiKey } = await res.json();
     res = await fetch(`${base}/api/v1/tokens`, {
       headers: { Authorization: `Bearer ${apiKey}` }
     });
     if (res.status !== 200) throw new Error('key read failed');
-    res = await fetch(`${base}/api/v1/api-keys/rotate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${adminToken}`,
-        'x-tenant-id': tenant1._id.toString(),
-        'x-project-id': project1._id.toString()
-      }
-    });
+      res = await fetch(`${base}/api/v1/api-keys/rotate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+          'x-tenant-id': tenant1.toString(),
+          'x-project-id': project1.toString()
+        }
+      });
     if (res.status !== 200) throw new Error('rotate failed');
     const { apiKey: newKey } = await res.json();
     res = await fetch(`${base}/api/v1/tokens`, { headers: { Authorization: `Bearer ${apiKey}` } });

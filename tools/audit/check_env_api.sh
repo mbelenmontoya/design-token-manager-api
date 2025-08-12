@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Minimal env validator for API audit
+## Minimal env validator for API audit
 
 set -e
 
-# Load .env if present
+# For local development allow sourcing a .env if present, but the script
+# otherwise relies solely on the current process environment. Missing files
+# are ignored quietly.
 if [ -f .env ]; then
   set -a; source .env; set +a
 fi

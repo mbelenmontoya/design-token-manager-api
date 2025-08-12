@@ -16,15 +16,8 @@ mkdir -p tools/audit
 
 log() { echo "$1" | tee -a "$REPORT"; }
 
-# preload env for base URL
-if [ -f .env ]; then
-  set -a; source .env; set +a
-fi
-BASE_URL="http://localhost:${PORT:-4000}"
-
 log "# API Audit Report"
 log "Generated on $(date)"
-log "Base URL: $BASE_URL"
 log ""
 
 # Environment validation (CRITICAL)
@@ -39,6 +32,11 @@ cat /tmp/env.log >> "$REPORT"
 if [ $env_ok -eq 0 ] && [ "$AUDIT_MODE" = "strict" ]; then
   exit 1
 fi
+
+# Base URL once PORT is resolved
+BASE_URL="http://localhost:${PORT}"
+log "Base URL: $BASE_URL"
+log ""
 
 # Start server and wait for health
 SERVER_PID=""
