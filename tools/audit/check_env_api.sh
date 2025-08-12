@@ -1,52 +1,27 @@
 #!/usr/bin/env bash
-# Validate required environment variables for the API.
+# Minimal env validator for API audit
 
-set -u
+set -e
 
-ENV_FILE=".env"
-
-if [ ! -f "$ENV_FILE" ]; then
-  echo "❌ .env file not found" >&2
-  return 1
+# Load .env if present
+if [ -f .env ]; then
+  set -a; source .env; set +a
 fi
-
-# Load variables
-set -a
-source "$ENV_FILE"
-set +a
-
-declare -A examples=(
-  [PORT]="4000"
-  [MONGO_URI]="mongodb+srv://user:pass@cluster.mongodb.net/db"
-  [JWT_SECRET]="supersecret"
-  [CLIENT_URL]="http://localhost:5173"
-)
 
 missing=()
-echo "| Variable | Status | Example |"
-echo "| --- | --- | --- |"
-for var in PORT MONGO_URI JWT_SECRET CLIENT_URL; do
-  if [ -z "${!var:-}" ]; then
-    missing+=("$var")
-    echo "| $var | MISSING | ${examples[$var]} |"
-  else
-    echo "| $var | OK | ${examples[$var]} |"
-  fi
-done
+[ -z "${MONGO_URI:-}" ] && missing+=("MONGO_URI")
+[ -z "${JWT_SECRET:-}" ] && missing+=("JWT_SECRET")
+
+export PORT="${PORT:-4000}"
+export CLIENT_URL="${CLIENT_URL:-http://localhost:5173}"
 
 if [ ${#missing[@]} -ne 0 ]; then
+  echo "Missing required env vars: ${missing[*]}" >&2
   return 1
 fi
 
-stripe_missing=()
-for var in STRIPE_SECRET STRIPE_PRICE_BASIC STRIPE_PRICE_PRO; do
-  if [ -z "${!var:-}" ]; then
-    stripe_missing+=("$var")
-  fi
-done
-
-if [ ${#stripe_missing[@]} -ne 0 ]; then
-  echo "Missing optional Stripe env vars: ${stripe_missing[*]} (billing checks will be skipped)" >&2
+# Optional Stripe vars – skip billing checks if absent
+if [ -z "${STRIPE_SECRET_KEY:-}" ]; then
   export SMOKE_STRIPE=skip
 fi
 

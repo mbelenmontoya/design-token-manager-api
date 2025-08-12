@@ -161,23 +161,38 @@ app.use('/api-docs/v1', swaggerUi.serve, swaggerUi.setup(swaggerSpecV1));
 
 
 
-// 5) Health‐check
-app.get('/', (req, res) => {
-  const connected = mongoose.connection.readyState === 1;
-  const payload = {
-    ok: connected,
-    uptime: Math.round(process.uptime()),
-    version: pkg.version,
-    mongo: { connected }
-  };
+// 5) Health‐check (authoritative at /health)
+const buildHealth = () => {
+  const state = mongoose.connection.readyState;
+  const connected = state === 1;
   if (connected) {
-    payload.mongo.host = mongoose.connection.host;
-    payload.mongo.db = mongoose.connection.name;
-  } else {
-    payload.reason = 'MongoDB not connected';
+    return {
+      ok: true,
+      uptime: Math.round(process.uptime()),
+      mongo: {
+        connected: true,
+        state,
+        host: mongoose.connection.host,
+        db: mongoose.connection.name
+      },
+      version: pkg.version
+    };
   }
-  res.status(connected ? 200 : 500).json(payload);
-});
+  return {
+    ok: false,
+    reason: 'mongo-not-connected',
+    mongo: { connected: false, state },
+    version: pkg.version
+  };
+};
+
+const healthHandler = (req, res) => {
+  const payload = buildHealth();
+  res.status(payload.ok ? 200 : 503).json(payload);
+};
+
+app.get('/health', healthHandler);
+app.get('/', healthHandler);
 
 // 6) Start server
 const start = async () => {
@@ -191,7 +206,10 @@ const start = async () => {
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
-  start();
+  start().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }
 
 // Export app for testing

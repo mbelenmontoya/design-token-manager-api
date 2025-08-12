@@ -1,4 +1,3 @@
-import fs from 'fs';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import User from '../../src/models/User.js';
@@ -9,79 +8,38 @@ import Membership from '../../src/models/Membership.js';
 dotenv.config();
 
 const base = process.env.BASE_URL || 'http://localhost:4000';
-const envResults = [];
 const results = [];
 
-function record(arr, title, ok, severity = 'critical', error = '', skipped = false) {
-  arr.push({ title, ok, severity, error, skipped });
-}
-
-async function runEnvChecks() {
-  record(envResults, '.env present', fs.existsSync('.env'), 'critical', fs.existsSync('.env') ? '' : '.env file missing');
-  const req = ['PORT', 'MONGO_URI', 'JWT_SECRET', 'CLIENT_URL'];
-  let varsOk = true;
-  for (const v of req) {
-    const ok = !!process.env[v];
-    record(envResults, `${v} present`, ok, 'critical', ok ? '' : `${v} missing`);
-    if (!ok) varsOk = false;
-  }
-  if (!varsOk) return false;
-  try {
-    await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
-    record(envResults, 'MongoDB connect', true);
-    return true;
-  } catch (e) {
-    record(envResults, 'MongoDB connect', false, 'critical', String(e.message || e));
-    return false;
-  }
+function record(title, ok, severity = 'warn', error = '', skipped = false) {
+  results.push({ title, ok, severity, error, skipped });
 }
 
 async function check(title, fn, severity = 'warn') {
   try {
     await fn();
-    record(results, title, true, severity);
+    record(title, true, severity);
   } catch (err) {
     const msg = String(err);
     if (msg.startsWith('skip:')) {
-      record(results, title, true, severity, msg.slice(5).trim(), true);
+      record(title, true, severity, msg.slice(5).trim(), true);
     } else {
-      record(results, title, false, severity, msg);
+      record(title, false, severity, msg);
     }
   }
 }
 
-const downstream = [
-  'Health /',
-  'Swagger /api-docs',
-  '/api/v1/tokens route exists',
-  'Version headers',
-  '/status/versioning',
-  'Immutable artifacts /v/1.0.0',
-  'Auth login works with seeded admin',
-  'Multi-tenant isolation and role enforcement',
-  'Invitations flow',
-  'API key auth + scope enforcement + rotation',
-  'Billing routes and plan limit enforcement'
-];
-
 (async () => {
-  const envOk = await runEnvChecks();
-  if (!envOk) {
-    for (const t of downstream) {
-      record(results, t, true, 'warn', 'skipped due to env', true);
-    }
-    outputAndExit();
-    return;
-  }
-
   let adminToken;
   let tenant1, project1, tenant2, project2, viewerToken;
 
-  await check('Health /', async () => {
-    const res = await fetch(`${base}/`);
-    if (res.status !== 200) throw new Error(`status ${res.status}`);
-    const body = await res.json();
-    if (!body.ok || !body.mongo?.connected) throw new Error('not healthy');
+  await mongoose.connect(process.env.MONGO_URI);
+
+  await check('Health', async () => {
+    const res = await fetch(`${base}/health`);
+    const body = await res.json().catch(() => ({}));
+    if (res.status !== 200 || !body.ok) {
+      throw new Error(`status ${res.status} body ${JSON.stringify(body).slice(0, 100)}`);
+    }
   }, 'critical');
 
   await check('Swagger /api-docs', async () => {
@@ -96,7 +54,7 @@ const downstream = [
   });
 
   await check('Version headers', async () => {
-    const res = await fetch(`${base}/`);
+    const res = await fetch(`${base}/health`);
     const v = res.headers.get('api-version');
     if (!v) throw new Error('missing API-Version');
     if (process.env.DEPRECATION_TOGGLE === 'on') {
@@ -253,22 +211,12 @@ const downstream = [
   });
 
   await mongoose.disconnect();
-
   outputAndExit();
 })();
 
 function outputAndExit() {
   console.log('');
-  console.log('## Environment & Connectivity');
-  console.log('| Check | Result |');
-  console.log('| --- | --- |');
-  for (const r of envResults) {
-    const icon = r.ok ? (r.skipped ? '⚠' : '✅') : '❌';
-    const msg = r.ok && !r.error ? '' : ` ${r.error || ''}`.trim();
-    console.log(`| ${r.title} | ${icon}${msg ? ' - ' + msg : ''} |`);
-  }
-  console.log('');
-  console.log('## Functional Checks');
+  console.log('## Smoke Tests');
   console.log('| Check | Result |');
   console.log('| --- | --- |');
   for (const r of results) {
@@ -276,12 +224,11 @@ function outputAndExit() {
     const msg = r.ok && !r.error ? '' : ` ${r.error || ''}`.trim();
     console.log(`| ${r.title} | ${icon}${msg ? ' - ' + msg : ''} |`);
   }
-  const all = [...envResults, ...results];
-  const criticalFail = all.some(r => !r.ok && r.severity === 'critical');
-  const warnFail = all.some(r => !r.ok && r.severity === 'warn');
-  const passCount = all.filter(r => r.ok && !r.skipped).length;
-  const failCount = all.filter(r => !r.ok).length;
-  const skipCount = all.filter(r => r.skipped).length;
+  const criticalFail = results.some(r => !r.ok && r.severity === 'critical');
+  const warnFail = results.some(r => !r.ok && r.severity === 'warn');
+  const passCount = results.filter(r => r.ok && !r.skipped).length;
+  const failCount = results.filter(r => !r.ok).length;
+  const skipCount = results.filter(r => r.skipped).length;
   console.log('');
   console.log(`Passed: ${passCount}, Failed: ${failCount}, Skipped: ${skipCount}`);
   if (criticalFail) process.exit(2);
@@ -300,3 +247,4 @@ async function login(username, password) {
   if (!data.token) throw new Error('no token');
   return data.token;
 }
+

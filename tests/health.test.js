@@ -23,11 +23,13 @@ describe('Health Check', () => {
     if (mongo) await mongo.stop();
   });
 
-  it('GET / should return health JSON', async () => {
-    const res = await agent.get('/');
+  it('GET /health should return health JSON', async () => {
+    const res = await agent.get('/health');
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
     expect(res.body.mongo.connected).toBe(true);
+    expect(res.body.mongo.state).toBe(1);
+    expect(res.body.version).toBeDefined();
     expect(res.headers['api-version']).toBe('1.0');
   });
 });

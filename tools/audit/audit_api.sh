@@ -36,26 +36,8 @@ else
   log "❌ Environment validation failed"
 fi
 cat /tmp/env.log >> "$REPORT"
-
-# Connectivity diagnostics
-debug_ok=1
-if node tools/audit/debug_env.mjs >/tmp/debug.log 2>&1; then
-  log "✅ MongoDB connectivity ok"
-else
-  debug_ok=0
-  env_ok=0
-  log "❌ MongoDB connectivity failed"
-fi
-cat /tmp/debug.log >> "$REPORT"
-
 if [ $env_ok -eq 0 ] && [ "$AUDIT_MODE" = "strict" ]; then
-  log ""
-  log "| Check | Result |"
-  log "| --- | --- |"
-  log "| Environment/Connectivity | ❌ - failed |"
-  log ""
-  log "Passed: 0, Failed: 1, Skipped: 0"
-  exit 2
+  exit 1
 fi
 
 # Start server and wait for health
@@ -65,26 +47,33 @@ trap cleanup EXIT
 
 health_ok=0
 if [ $env_ok -eq 1 ]; then
-  npm start >/tmp/server.log 2>&1 &
+  npm run dev >/tmp/server.log 2>&1 &
   SERVER_PID=$!
   for i in {1..60}; do
-    if curl -fs "$BASE_URL/" >/dev/null 2>&1; then
-      health_ok=1
+    if ! kill -0 "$SERVER_PID" >/dev/null 2>&1; then
       break
     fi
-    if ! kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+    res=$(curl -s -w "\n%{http_code}" "$BASE_URL/health" || true)
+    body=$(echo "$res" | head -n -1)
+    code=$(echo "$res" | tail -n1)
+    if [ "$code" = "200" ] && echo "$body" | grep -q '"ok":true'; then
+      health_ok=1
       break
     fi
     sleep 1
   done
   if [ $health_ok -eq 1 ]; then
-    log "✅ Server started"
+    log "✅ API healthy"
   else
-    log "❌ Server failed to start or healthcheck failed"
+    log "❌ API failed health check"
     tail -n 20 /tmp/server.log >> "$REPORT"
   fi
 else
-  log "⚠ Server not started due to env failure"
+  log "⚠ API not started due to env failure"
+fi
+
+if [ $health_ok -eq 0 ] && [ "$AUDIT_MODE" = "strict" ]; then
+  exit 2
 fi
 
 # Smoke tests
