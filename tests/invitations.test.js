@@ -47,8 +47,10 @@ describe('Invitations and memberships', () => {
       .send({ email: 'user@example.com', role: 'viewer' });
     expect(resInvite.status).toBe(201);
     inviteLink = resInvite.body.invitation.link;
-    // extract token from /api/v1/invitations/:token/accept
-    const token = inviteLink.split('/')[4];
+    // Extract token robustly from the invitation link, e.g. /api/v1/invitations/:token/accept
+    const match = inviteLink.match(/\/invitations\/(.+?)\/accept/);
+    const token = match ? match[1] : '';
+    expect(token).toBeTruthy();
     const resAccept = await agent
       .post(`/api/v1/invitations/${token}/accept`)
       .set('Authorization', `Bearer ${userToken}`);
