@@ -20,5 +20,6 @@ describe('Health Check', () => {
     const res = await agent.get('/');
     expect(res.status).toBe(200);
     expect(res.text).toMatch(/Design Token Manager API is running/);
+    expect(res.headers['api-version']).toBe('1.0');
   });
 });

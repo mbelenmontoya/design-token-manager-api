@@ -11,6 +11,8 @@ import swaggerUi from 'swagger-ui-express';
 import categoryRoutes from './routes/categories.js';
 import invitationRoutes from './routes/invitations.js';
 import membershipRoutes from './routes/memberships.js';
+import versioning from './middleware/versioning.js';
+import statusRoutes from './routes/status.js';
 import releaseRoutes from './routes/releases.js';
 import apiKeyRoutes from './routes/apiKeys.js';
 
@@ -29,6 +31,9 @@ app.use(morgan('dev'));
 
 // 3) JSON parser
 app.use(express.json());  // parse JSON bodies
+
+// Versioning headers
+app.use(versioning);
 
 const swaggerSpecV1 = swaggerJSDoc({
   definition: {
@@ -143,6 +148,7 @@ app.use('/api/tokens', tokenRoutes);
 app.use('/api/v1/auth', authRoutes);
 // Backwards compatibility for auth login
 app.use('/api/auth', authRoutes);
+app.use('/status', statusRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1', invitationRoutes);
 app.use('/api/v1/memberships', membershipRoutes);
