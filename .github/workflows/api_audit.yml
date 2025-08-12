@@ -1,17 +1,72 @@
 name: API Audit
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  audit:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - 'src/**'
+              - 'config/**'
+              - 'tools/audit/**'
+              - 'package.json'
+
+  audit:
+    needs: [lint, changes]
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:6
+        ports:
+          - 27017:27017
+    env:
+      PORT: 4000
+      JWT_SECRET: ci-smoke-secret
+      CLIENT_URL: http://localhost:5173
+      MONGO_URI: mongodb://127.0.0.1:27017/design_tokens?retryWrites=true&w=majority
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - name: Seed admin user
+        run: node src/scripts/seedUser.js
       - name: Run API audit
-        run: bash tools/audit/audit_api.sh
+        run: AUDIT_MODE=strict bash tools/audit/audit_api.sh
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-audit-report
+          path: tools/audit/report_api.md
+
