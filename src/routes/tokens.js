@@ -18,13 +18,13 @@ import requireRole from '../middleware/requireRole.js';
 import { importTokens } from '../controllers/importController.js';
 const router = express.Router();
 
-// ‣ GET   /api/tokens
-// ‣ POST  /api/tokens
+// ‣ GET   /api/v1/tokens
+// ‣ POST  /api/v1/tokens
 router
   .route('/')
   /**
  * @swagger
- * /api/tokens:
+ * /api/v1/tokens:
  *   get:
  *     summary: Get paginated list of tokens
  *     tags: [Tokens]
@@ -68,7 +68,7 @@ router
   .get(verifyJWT, tenantContext, getTokens)
 /**
  * @swagger
- * /api/tokens:
+ * /api/v1/tokens:
  *   post:
  *     summary: Create a new token
  *     tags: [Tokens]
@@ -105,13 +105,13 @@ router
     createToken
   );
 
-// ‣ PUT    /api/tokens/:id
-// ‣ DELETE /api/tokens/:id
+// ‣ PUT    /api/v1/tokens/:id
+// ‣ DELETE /api/v1/tokens/:id
 router
   .route('/:id')
   /**
  * @swagger
- * /api/tokens/{id}:
+ * /api/v1/tokens/{id}:
  *   put:
  *     summary: Update a token by ID
  *     tags: [Tokens]
@@ -141,7 +141,7 @@ router
   .put(verifyJWT, tenantContext, requireRole(['admin','editor']), updateToken)
   /**
  * @swagger
- * /api/tokens/{id}:
+ * /api/v1/tokens/{id}:
  *   delete:
  *     summary: Delete a token by ID
  *     tags: [Tokens]
@@ -168,7 +168,7 @@ router
   .delete(verifyJWT, tenantContext, requireRole(['admin','editor']), deleteToken);
   /**
  * @swagger
- * /api/tokens/import:
+ * /api/v1/tokens/import:
  *   post:
  *     summary: Bulk import or update tokens
  *     tags: [Tokens]

@@ -42,33 +42,33 @@ describe('Invitations and memberships', () => {
 
   it('invites and accepts', async () => {
     const resInvite = await agent
-      .post(`/api/tenants/${tenant._id.toString()}/invitations`)
+      .post(`/api/v1/tenants/${tenant._id.toString()}/invitations`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ email: 'user@example.com', role: 'viewer' });
     expect(resInvite.status).toBe(201);
     inviteLink = resInvite.body.invitation.link;
     const token = inviteLink.split('/')[3];
     const resAccept = await agent
-      .post(`/api/invitations/${token}/accept`)
+      .post(`/api/v1/invitations/${token}/accept`)
       .set('Authorization', `Bearer ${userToken}`);
     expect(resAccept.status).toBe(201);
     expect(resAccept.body.membership.role).toBe('viewer');
     membershipId = resAccept.body.membership._id;
     const resAcceptAgain = await agent
-      .post(`/api/invitations/${token}/accept`)
+      .post(`/api/v1/invitations/${token}/accept`)
       .set('Authorization', `Bearer ${userToken}`);
     expect(resAcceptAgain.status).toBe(400);
   });
 
   it('updates and revokes membership', async () => {
     const resPatch = await agent
-      .patch(`/api/memberships/${membershipId}`)
+      .patch(`/api/v1/memberships/${membershipId}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ role: 'editor' });
     expect(resPatch.status).toBe(200);
     expect(resPatch.body.role).toBe('editor');
     const resDelete = await agent
-      .delete(`/api/memberships/${membershipId}`)
+      .delete(`/api/v1/memberships/${membershipId}`)
       .set('Authorization', `Bearer ${adminToken}`);
     expect(resDelete.status).toBe(200);
     expect(resDelete.body.message).toMatch(/Access revoked/);
