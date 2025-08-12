@@ -47,7 +47,7 @@ describe('Access control for tokens', () => {
 
   it('allows editor to create token', async () => {
     const res = await agent
-      .post('/api/tokens')
+      .post('/api/v1/tokens')
       .set('Authorization', `Bearer ${editorToken}`)
       .set('x-tenant-id', tenant._id.toString())
       .set('x-project-id', project._id.toString())
@@ -56,9 +56,20 @@ describe('Access control for tokens', () => {
     expect(res.body.name).toBe('color.primary');
   });
 
-  it('forbids viewer from creating token', async () => {
+  it('allows editor to create token via legacy path', async () => {
     const res = await agent
       .post('/api/tokens')
+      .set('Authorization', `Bearer ${editorToken}`)
+      .set('x-tenant-id', tenant._id.toString())
+      .set('x-project-id', project._id.toString())
+      .send({ name: 'color.legacy', value: '#abc' });
+    expect(res.status).toBe(201);
+    expect(res.body.name).toBe('color.legacy');
+  });
+
+  it('forbids viewer from creating token', async () => {
+    const res = await agent
+      .post('/api/v1/tokens')
       .set('Authorization', `Bearer ${viewerToken}`)
       .set('x-tenant-id', tenant._id.toString())
       .set('x-project-id', project._id.toString())
@@ -68,7 +79,7 @@ describe('Access control for tokens', () => {
 
   it('rejects requests for non-member tenant', async () => {
     const res = await agent
-      .get('/api/tokens')
+      .get('/api/v1/tokens')
       .set('Authorization', `Bearer ${editorToken}`)
       .set('x-tenant-id', otherTenant._id.toString())
       .set('x-project-id', otherProject._id.toString());

@@ -16,18 +16,59 @@ import verifyJWT from '../middleware/verifyJWT.js';
 import tenantContext from '../middleware/tenantContext.js';
 import requireRole from '../middleware/requireRole.js';
 import { importTokens } from '../controllers/importController.js';
+import verifyApiKey from '../middleware/verifyApiKey.js';
 const router = express.Router();
 
-// ‣ GET   /api/tokens
-// ‣ POST  /api/tokens
+/**
+ * Token routes supporting project-level API key access.
+ *
+ * Clients may supply a non-JWT API key using the header
+ * `Authorization: Bearer <apiKey>`.
+ *
+ * Required scopes:
+ *   - `read:tokens` for `GET /api/v1/tokens`
+ *   - `write:tokens` for `POST`, `PUT`, and `DELETE /api/v1/tokens`
+
+ *
+ * API keys are scoped to a single project and cannot access tokens outside
+ * of that project.
+ */
+router.get('/', verifyApiKey('read:tokens'), getTokens);
+router.post(
+  '/',
+  verifyApiKey('write:tokens'),
+  [
+    body('name').isString().notEmpty(),
+    body('value').isString().notEmpty(),
+  ],
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
+    next();
+  },
+  createToken
+);
+
+router.put('/:id', verifyApiKey('write:tokens'), updateToken);
+router.delete('/:id', verifyApiKey('write:tokens'), deleteToken);
+
+// ‣ GET   /api/v1/tokens
+// ‣ POST  /api/v1/tokens
+
 router
   .route('/')
-  /**
+ /**
  * @swagger
- * /api/tokens:
+ * /api/v1/tokens:
  *   get:
  *     summary: Get paginated list of tokens
  *     tags: [Tokens]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     description: "Requires `read:tokens` scope and `Authorization: Bearer <apiKey>`"
  *     parameters:
  *       - in: query
  *         name: page
@@ -68,10 +109,14 @@ router
   .get(verifyJWT, tenantContext, getTokens)
 /**
  * @swagger
- * /api/tokens:
+ * /api/v1/tokens:
  *   post:
  *     summary: Create a new token
  *     tags: [Tokens]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     description: "Requires `write:tokens` scope and `Authorization: Bearer <apiKey>`"
  *     requestBody:
  *       required: true
  *       content:
@@ -105,16 +150,20 @@ router
     createToken
   );
 
-// ‣ PUT    /api/tokens/:id
-// ‣ DELETE /api/tokens/:id
+// ‣ PUT    /api/v1/tokens/:id
+// ‣ DELETE /api/v1/tokens/:id
 router
   .route('/:id')
   /**
  * @swagger
- * /api/tokens/{id}:
+ * /api/v1/tokens/{id}:
  *   put:
  *     summary: Update a token by ID
  *     tags: [Tokens]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     description: "Requires `write:tokens` scope and `Authorization: Bearer <apiKey>`"
  *     parameters:
  *       - in: path
  *         name: id
@@ -141,10 +190,14 @@ router
   .put(verifyJWT, tenantContext, requireRole(['admin','editor']), updateToken)
   /**
  * @swagger
- * /api/tokens/{id}:
+ * /api/v1/tokens/{id}:
  *   delete:
  *     summary: Delete a token by ID
  *     tags: [Tokens]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     description: "Requires `write:tokens` scope and `Authorization: Bearer <apiKey>`"
  *     parameters:
  *       - in: path
  *         name: id
@@ -168,7 +221,7 @@ router
   .delete(verifyJWT, tenantContext, requireRole(['admin','editor']), deleteToken);
   /**
  * @swagger
- * /api/tokens/import:
+ * /api/v1/tokens/import:
  *   post:
  *     summary: Bulk import or update tokens
  *     tags: [Tokens]
