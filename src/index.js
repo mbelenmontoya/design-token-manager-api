@@ -11,6 +11,7 @@ import swaggerUi from 'swagger-ui-express';
 import categoryRoutes from './routes/categories.js';
 import invitationRoutes from './routes/invitations.js';
 import membershipRoutes from './routes/memberships.js';
+import releaseRoutes from './routes/releases.js';
 import apiKeyRoutes from './routes/apiKeys.js';
 
 
@@ -135,6 +136,7 @@ const swaggerSpecV1 = swaggerJSDoc({
 });
 
 // 4) Routes
+app.use('/', releaseRoutes);
 app.use('/api/v1/tokens', tokenRoutes);
 // Backwards compatibility for unversioned path
 app.use('/api/tokens', tokenRoutes);
