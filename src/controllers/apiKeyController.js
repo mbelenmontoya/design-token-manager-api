@@ -31,8 +31,26 @@ export const rotateApiKey = async (req, res, next) => {
       return res.status(404).json({ message: 'API key not found' });
     }
     const rawKey = crypto.randomBytes(32).toString('hex');
-    apiKey.hashedKey = crypto.createHash('sha256').update(rawKey).digest('hex');
-    await apiKey.save();
+    const newHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+    // Attempt an atomic rotation by including the previously fetched hashed key
+    // in the update filter. If another rotation completes first, this update will
+    // affect zero documents and we can surface a conflict to the caller.
+    const updated = await ApiKey.findOneAndUpdate(
+      {
+        _id: apiKey._id,
+        hashedKey: apiKey.hashedKey,
+      },
+      { hashedKey: newHash },
+      { new: true }
+    );
+    if (!updated) {
+      // Edge case: two rotate requests raced and a different hashedKey was already
+      // persisted. Clients should retry to obtain the latest key.
+      return res.status(409).json({ message: 'API key rotation conflict, retry' });
+    }
+    // At this point the DB has swapped the hash in a single operation, so the old
+    // key remains valid only until the update commit. Concurrent rotations rely on
+    // the conflict check above to avoid issuing multiple valid keys.
     res.json({ apiKey: rawKey });
   } catch (err) {
     next(err);

@@ -83,6 +83,24 @@ describe('API key authentication', () => {
     apiKey = newKey;
   });
 
+  it('handles concurrent rotations with conflict response', async () => {
+    const reqA = agent
+      .post(`/api/api-keys/${apiKeyId}/rotate`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('x-tenant-id', tenant._id.toString())
+      .set('x-project-id', project._id.toString());
+    const reqB = agent
+      .post(`/api/api-keys/${apiKeyId}/rotate`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('x-tenant-id', tenant._id.toString())
+      .set('x-project-id', project._id.toString());
+    const [resA, resB] = await Promise.all([reqA, reqB]);
+    const statuses = [resA.status, resB.status].sort();
+    expect(statuses).toEqual([200, 409]);
+    const success = resA.status === 200 ? resA : resB;
+    apiKey = success.body.apiKey;
+  });
+
   it('enforces rate limiting', async () => {
     for (let i = 0; i < 5; i++) {
       await agent.get('/api/tokens').set('Authorization', `Bearer ${apiKey}`);
