@@ -11,6 +11,7 @@ import swaggerUi from 'swagger-ui-express';
 import categoryRoutes from './routes/categories.js';
 import invitationRoutes from './routes/invitations.js';
 import membershipRoutes from './routes/memberships.js';
+import apiKeyRoutes from './routes/apiKeys.js';
 
 
 dotenv.config();
@@ -40,6 +41,20 @@ const swaggerSpecV1 = swaggerJSDoc({
       { url: 'http://localhost:4000/api/v1', description: 'v1' },
     ],
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Admin JWT'
+        },
+        apiKeyAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'APIKey',
+          description: 'Project API key'
+        }
+      },
       schemas: {
         Token: {
           type: 'object',
@@ -68,6 +83,50 @@ const swaggerSpecV1 = swaggerJSDoc({
             description: { type: 'string' },
           },
         },
+        ApiKey: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            tenant: { type: 'string' },
+            project: { type: 'string' },
+            scopes: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: ['read:tokens', 'write:tokens']
+              }
+            },
+            createdBy: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        ApiKeyRequest: {
+          type: 'object',
+          required: ['scopes'],
+          properties: {
+            scopes: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: ['read:tokens', 'write:tokens']
+              }
+            },
+          },
+        },
+        ApiKeyWithValue: {
+          type: 'object',
+          properties: {
+            apiKey: { type: 'string' },
+            id: { type: 'string' },
+          },
+        },
+        ApiKeyRotateResponse: {
+          type: 'object',
+          properties: {
+            apiKey: { type: 'string' },
+          },
+        },
       },
     },
   },
@@ -85,6 +144,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1', invitationRoutes);
 app.use('/api/v1/memberships', membershipRoutes);
+app.use('/api/v1/api-keys', apiKeyRoutes);
+// Backwards compatibility for API key routes
+app.use('/api/api-keys', apiKeyRoutes);
 app.use('/api-docs/v1', swaggerUi.serve, swaggerUi.setup(swaggerSpecV1));
 
 
