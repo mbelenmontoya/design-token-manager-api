@@ -1,6 +1,6 @@
 /**
  * @swagger
- * /api/auth/login:
+ * /api/v1/auth/login:
  *   post:
  *     summary: Authenticate a user and return a JWT.
  *     tags: [Auth]
@@ -36,7 +36,7 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
-// @route  POST /api/auth/login
+// @route  POST /api/v1/auth/login
 // @desc   Authenticate & get token
 // @access Public
 router.post('/login', async (req, res, next) => {
