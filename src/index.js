@@ -11,6 +11,7 @@ import swaggerUi from 'swagger-ui-express';
 import categoryRoutes from './routes/categories.js';
 import invitationRoutes from './routes/invitations.js';
 import membershipRoutes from './routes/memberships.js';
+import releaseRoutes from './routes/releases.js';
 
 
 dotenv.config();
@@ -76,6 +77,7 @@ const swaggerSpec = swaggerJSDoc({
 });
 
 // 4) Routes
+app.use('/', releaseRoutes);
 app.use('/api/tokens', tokenRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
