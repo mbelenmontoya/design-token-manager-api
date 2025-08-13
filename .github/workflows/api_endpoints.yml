@@ -39,4 +39,4 @@ jobs:
         if: always()
         with:
           name: endpoints-test-report
-          path: reports/endpoints.json
+          path: reports/**/*.json
