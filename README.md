@@ -1,23 +1,14 @@
 # Design Token Manager API
 
-A RESTful API for managing design tokens (colors, spacing, fonts, shadows, etc.) with JWT authentication and auto-generated Swagger documentation.
-
----
+A RESTful API for managing design tokens with multi-tenant architecture, JWT authentication, and enterprise-grade features.
 
 ## Table of Contents
 
 * [Features](#features)
-* [Tech Stack](#tech-stack)
-* [Prerequisites](#prerequisites)
-* [Setup](#setup)
-
-  * [Clone & Install](#clone--install)
-  * [Environment Variables](#environment-variables)
-  * [Seed Admin User](#seed-admin-user)
-  * [Run the API](#run-the-api)
-* [API Documentation (Swagger)](#api-documentation-swagger)
-* [API Endpoints](#api-endpoints)
-* [Scripts](#scripts)
+* [Quick Start](#quick-start)
+* [API Documentation](#api-documentation)
+* [Development](#development)
+* [Project History](#project-history)
 * [Contributing](#contributing)
 * [License](#license)
 
@@ -25,128 +16,81 @@ A RESTful API for managing design tokens (colors, spacing, fonts, shadows, etc.)
 
 ## Features
 
-* **CRUD** for design tokens
-* **JWT** authentication (login endpoint)
-* **Input validation** and centralized error handling
-* **Pagination & filtering** on token listing
-* **Interactive Swagger** UI at `/api-docs/v1`
+* **Multi-tenant architecture** with tenant/project isolation
+* **JWT & API key authentication** for secure access
+* **Role-based access control** (admin, editor, viewer)
+* **Design token CRUD** with categories and validation
+* **Team management** with invitations and memberships
+* **Bulk import/export** functionality
+* **Token releases and versioning**
+* **Interactive Swagger documentation**
 
----
+## Quick Start
 
-## Tech Stack
-
-* **Node.js** & **Express**
-* **MongoDB Atlas** via **Mongoose**
-* **jsonwebtoken** for JWT
-* **bcryptjs** for password hashing
-* **swagger-jsdoc** & **swagger-ui-express** for docs
-* **cors**, **morgan** for middleware
-
----
-
-## Prerequisites
-
+### Prerequisites
 * Node.js v18+ and npm
-* MongoDB Atlas account (free tier is sufficient)
-* Git
+* MongoDB Atlas account
 
----
-
-## Setup
-
-### Clone & Install
-
+### Setup
 ```bash
-git clone https://github.com/mbelenmontoya/design-token-manager-api.git
+# Clone and install
+git clone <repository-url>
 cd design-token-manager-api
 npm install
-```
 
-### Environment Variables
+# Environment setup
+cp .env.example .env
+# Edit .env with your MongoDB credentials
 
-Create a `.env` file in the project root using the `.env.example` as a template:
-
-```dotenv
-PORT=4000
-MONGO_URI=your_mongodb_atlas_connection_string
-JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRES_IN=1h
-CLIENT_URL=http://localhost:5173
-```
-
-### Seed Admin User
-
-Run the seed script to create the initial `admin` user:
-
-```bash
+# Seed initial data
 node scripts/seedUser.js
-# → Creates admin / Admin#123 (if not existing)
-```
+node scripts/seedCategories.js
 
-### Run the API
-
-```bash
+# Start development server
 npm run dev
 ```
 
-* The server listens on `http://localhost:4000`
-* Health check at `http://localhost:4000/`
+The API will be available at `http://localhost:4000`
 
----
+## API Documentation
 
-## API Documentation (Swagger)
+Interactive Swagger documentation available at: `http://localhost:4000/api-docs/v1`
 
-Once running, open:
+### Key Endpoints
+- **Authentication**: `POST /api/v1/auth/login`
+- **Tokens**: Full CRUD at `/api/v1/tokens`
+- **API Keys**: Management at `/api/v1/api-keys`
+- **Team Management**: `/api/v1/invitations`, `/api/v1/memberships`
+- **Health**: `/health`, `/status`
 
+## Development
+
+### Available Scripts
+```bash
+npm run dev              # Start development server
+npm start                # Production server
+npm run lint             # Code quality checks
+npm test                 # Run all tests
+npm run test:endpoints   # Integration tests
 ```
-http://localhost:4000/api-docs/v1
-```
 
-Browse and test all endpoints interactively.
+### Tech Stack
+- **Node.js 18+** with Express.js
+- **MongoDB** with Mongoose ODM
+- **JWT** authentication + **API key** auth
+- **Swagger** for API documentation
+- **Jest** for testing
 
----
+## Project History
 
-## API Endpoints
+For detailed project history and what changes were made when, see [CHANGELOG.md](CHANGELOG.md).  
+For future plans and development roadmap, see [ROADMAP.md](ROADMAP.md).
 
-### Auth
-
-* `POST /api/v1/auth/login`
-
-  * **Body**: `{ "username": string, "password": string }`
-  * **Response**: `{ "token": string }`
-
-### Tokens
-
-* `GET /api/v1/tokens`
-
-  * Query params: `page`, `limit`, `category`
-  * Returns: `{ total, page, limit, pages, tokens: [] }`
-
-* `POST /api/v1/tokens` (JWT required)
-
-  * **Body**: `{ "name": string, "value": string, "category": string, "description"?: string }`
-  * **Response**: Created token object
-
-* `PUT /api/v1/tokens/:id` (JWT required)
-
-  * **Body**: Partial token fields
-  * **Response**: Updated token object
-
-* `DELETE /api/v1/tokens/:id` (JWT required)
-
-  * **Response**: `{ "message": "Token removed" }`
-
----
-
-## Scripts
-
-| Command                    | Description                     |
-| -------------------------- | ------------------------------- |
-| `npm run dev`              | Start server with nodemon (dev) |
-| `npm start`                | Start server (production)       |
-| `node scripts/seedUser.js` | Seed admin user                 |
-
----
+Key highlights:
+- **Multi-tenant API** with MongoDB backend
+- **Comprehensive authentication** (JWT + API keys)
+- **Planned migration** to PostgreSQL + Prisma
+- **5-stage development roadmap** for enterprise features
 
 ## Contributing
 
@@ -155,8 +99,6 @@ Browse and test all endpoints interactively.
 3. Commit your changes (`git commit -m 'feat: add feature'`)
 4. Push to the branch (`git push origin feat/your-feature`)
 5. Open a Pull Request
-
----
 
 ## License
 
