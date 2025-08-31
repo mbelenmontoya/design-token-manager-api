@@ -13,7 +13,10 @@ export default async () => {
       binary: { version: '7.0.5' },
     });
     global.__MONGOD__ = mongod;
+    global.__MONGO_URI__ = mongod.getUri();
     process.env.MONGO_URI = mongod.getUri();
+  } else {
+    global.__MONGO_URI__ = process.env.MONGO_URI;
   }
 
   const env = {
@@ -32,10 +35,35 @@ export default async () => {
   for (let i = 0; i < 60; i++) {
     try {
       const res = await fetch(`${base}/health`);
-      if (res.ok) break;
-    } catch {}
+      if (res.ok) {
+        // With new DAL health format, we need to check if system is actually healthy
+        const healthData = await res.json();
+        console.log(`Health check ${i + 1}/60: Health status:`, JSON.stringify(healthData));
+        
+        if (healthData.ok === true && healthData.mongo?.connected === true) {
+          // System reports as healthy, but let's also test if database operations work
+          // Try a simple ping to verify the server can actually handle requests
+          try {
+            const pingRes = await fetch(`${base}/`);
+            if (pingRes.ok) {
+              console.log(`✅ Server fully ready after ${i + 1} seconds`);
+              break; // System is fully healthy and responding
+            }
+          } catch (pingErr) {
+            console.log(`Health check ${i + 1}/60: Ping test failed:`, pingErr.message);
+          }
+        } else {
+          // System not healthy yet, continue waiting
+          console.log(`Health check ${i + 1}/60: System not healthy yet - ok: ${healthData.ok}, mongo.connected: ${healthData.mongo?.connected}`);
+        }
+      }
+    } catch (err) {
+      if (i > 30) {
+        console.log(`Health check ${i}/60: Connection error:`, err.message);
+      }
+    }
     await sleep(1000);
-    if (i === 59) throw new Error('Server did not become healthy');
+    if (i === 59) throw new Error('Server did not become healthy within 60 seconds');
   }
 
   await new Promise((resolve, reject) => {

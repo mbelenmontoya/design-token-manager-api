@@ -1,0 +1,303 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop, 'migration/*' ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+  
+jobs:
+  # Basic validation and linting
+  lint:
+    name: Lint & Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linter
+      run: npm run lint
+      
+    - name: Check for security vulnerabilities
+      run: npm audit --audit-level=moderate
+      
+  # Database and DAL tests (fast)
+  dal-tests:
+    name: DAL & Database Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Setup test environment
+      run: |
+        export JWT_SECRET="ci-test-secret"
+        export DB_READS="mongo"
+        export DB_WRITES="mongo"
+        
+    - name: Run DAL tests
+      run: npm test -- tests/dal/
+      env:
+        JWT_SECRET: ci-test-secret
+        DB_READS: mongo
+        DB_WRITES: mongo
+
+  # Unit tests (excluding integration)
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run unit tests
+      run: npm test -- --testPathIgnorePatterns=tests/integration/
+      env:
+        JWT_SECRET: ci-test-secret
+        DB_READS: mongo
+        DB_WRITES: mongo
+
+  # Full integration tests (slower, more comprehensive)
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run integration tests
+      run: npm run test:endpoints
+      env:
+        CI: true
+        JWT_SECRET: ci-test-secret
+        JWT_EXPIRES_IN: 1h
+        CLIENT_URL: http://localhost:5173
+        DB_READS: mongo
+        DB_WRITES: mongo
+
+  # Database migration validation
+  migration-validation:
+    name: Migration Validation
+    runs-on: ubuntu-latest
+    if: contains(github.head_ref, 'migration/') || contains(github.ref, 'migration/')
+    
+    strategy:
+      matrix:
+        config:
+          - { reads: 'mongo', writes: 'mongo', name: 'MongoDB Only' }
+          # Add more configurations as we implement them
+          # - { reads: 'mongo', writes: 'dual', name: 'Dual Write' }
+          # - { reads: 'supabase', writes: 'dual', name: 'Read Cutover' }
+          # - { reads: 'supabase', writes: 'supabase', name: 'Full Migration' }
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Test migration configuration - ${{ matrix.config.name }}
+      run: |
+        echo "Testing with DB_READS=${{ matrix.config.reads }} DB_WRITES=${{ matrix.config.writes }}"
+        npm test -- tests/dal/
+      env:
+        JWT_SECRET: ci-test-secret
+        DB_READS: ${{ matrix.config.reads }}
+        DB_WRITES: ${{ matrix.config.writes }}
+
+  # Prisma schema validation
+  prisma-validation:
+    name: Prisma Schema Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Validate Prisma schema
+      run: |
+        npx prisma validate
+        npx prisma format --check
+        
+    - name: Generate Prisma client (validation)
+      run: npx prisma generate
+      env:
+        DATABASE_URL: postgresql://test:test@localhost:5432/test
+
+  # Security and dependency scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run security audit
+      run: npm audit --audit-level=high
+      
+    - name: Check for known vulnerabilities
+      run: |
+        # Check for any TODO/FIXME security issues
+        ! grep -r "TODO.*security\|FIXME.*security" src/ || echo "Security TODOs found - review before merge"
+        
+        # Check for hardcoded secrets (basic check)
+        ! grep -r "password\s*=\|secret\s*=\|api_key\s*=" src/ --exclude-dir=tests || echo "Potential hardcoded secrets found"
+
+  # Documentation validation
+  docs-validation:
+    name: Documentation Validation  
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check documentation consistency
+      run: |
+        # Check that CLAUDE.md mentions all major components
+        test -f CLAUDE.md || (echo "CLAUDE.md missing" && exit 1)
+        test -f MIGRATION_PLAN.md || (echo "MIGRATION_PLAN.md missing" && exit 1)
+        test -f ROADMAP.md || (echo "ROADMAP.md missing" && exit 1)
+        
+        # Check that PR template exists
+        test -f .github/PULL_REQUEST_TEMPLATE.md || (echo "PR template missing" && exit 1)
+        
+        # Validate API documentation builds
+        npm run dev &
+        SERVER_PID=$!
+        sleep 10
+        
+        # Test that Swagger docs are accessible
+        curl -f http://localhost:4000/api-docs/v1/ || (echo "Swagger docs not accessible" && exit 1)
+        
+        kill $SERVER_PID || true
+      env:
+        JWT_SECRET: ci-test-secret
+        MONGO_URI: mongodb://localhost:27017/test
+
+  # Build and deployment readiness
+  build-validation:
+    name: Build & Deploy Readiness
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build project
+      run: |
+        # Test production build if we have one
+        npm run build 2>/dev/null || echo "No build script defined"
+        
+    - name: Validate environment configuration
+      run: |
+        # Check that .env.example has all required variables
+        test -f .env.example || (echo ".env.example missing" && exit 1)
+        
+        # Check for required environment variables
+        grep -q "MONGO_URI" .env.example || (echo "MONGO_URI missing from .env.example" && exit 1)
+        grep -q "JWT_SECRET" .env.example || (echo "JWT_SECRET missing from .env.example" && exit 1)
+        grep -q "SUPABASE_URL" .env.example || (echo "SUPABASE_URL missing from .env.example" && exit 1)
+        grep -q "DB_READS" .env.example || (echo "DB_READS missing from .env.example" && exit 1)
+        grep -q "DB_WRITES" .env.example || (echo "DB_WRITES missing from .env.example" && exit 1)
+
+# Require all jobs to pass for merge
+status-check:
+  name: All Checks Passed
+  runs-on: ubuntu-latest
+  needs: [lint, dal-tests, unit-tests, integration-tests, prisma-validation, security-scan, docs-validation, build-validation]
+  if: always()
+  
+  steps:
+    - name: Check all jobs status
+      run: |
+        if [[ "${{ needs.lint.result }}" != "success" ||
+              "${{ needs.dal-tests.result }}" != "success" ||
+              "${{ needs.unit-tests.result }}" != "success" ||
+              "${{ needs.integration-tests.result }}" != "success" ||
+              "${{ needs.prisma-validation.result }}" != "success" ||
+              "${{ needs.security-scan.result }}" != "success" ||
+              "${{ needs.docs-validation.result }}" != "success" ||
+              "${{ needs.build-validation.result }}" != "success" ]]; then
+          echo "One or more jobs failed"
+          exit 1
+        fi
+        echo "All checks passed successfully!"

@@ -1,0 +1,186 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users model
+model User {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  password    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  memberships       Membership[]
+  invitations       Invitation[]
+  acceptedInvitations Invitation[] @relation("AcceptedInvitations")
+  apiKeys           ApiKey[]
+
+  @@map("users")
+}
+
+// Tenants (Organizations) model
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  projects     Project[]
+  memberships  Membership[]
+  invitations  Invitation[]
+  tokens       Token[]
+  apiKeys      ApiKey[]
+
+  @@map("tenants")
+}
+
+// Projects model
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  tenantId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tokens    Token[]
+  apiKeys   ApiKey[]
+
+  // Unique constraint for tenant + name
+  @@unique([tenantId, name])
+  @@map("projects")
+}
+
+// Memberships (User-Tenant relationships) model
+model Membership {
+  id          String     @id @default(cuid())
+  userId      String
+  tenantId    String
+  role        MemberRole
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Unique constraint for user + tenant
+  @@unique([userId, tenantId])
+  @@map("memberships")
+}
+
+// Tokens model
+model Token {
+  id          String   @id @default(cuid())
+  tenantId    String
+  projectId   String
+  name        String
+  value       String
+  category    String   @default("other")
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Unique constraint for tenant + project + name
+  @@unique([tenantId, projectId, name])
+  @@map("tokens")
+}
+
+// API Keys model
+model ApiKey {
+  id            String     @id @default(cuid())
+  tenantId      String
+  projectId     String
+  hashedKey     String
+  scopes        ApiScope[]
+  lastUsedAt    DateTime?
+  createdById   String
+  revoked       Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User    @relation(fields: [createdById], references: [id])
+
+  @@map("api_keys")
+}
+
+// Invitations model
+model Invitation {
+  id          String     @id @default(cuid())
+  tenantId    String
+  email       String
+  role        MemberRole
+  tokenHash   String     @unique
+  inviterId   String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  acceptedById String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inviter    User   @relation(fields: [inviterId], references: [id])
+  acceptedBy User?  @relation("AcceptedInvitations", fields: [acceptedById], references: [id])
+
+  @@map("invitations")
+}
+
+// Categories model
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categories")
+}
+
+// Token Releases model
+model TokenRelease {
+  id            String   @id @default(cuid())
+  version       String
+  theme         String
+  format        String
+  tokens        Json
+  checksum      String
+  date          DateTime @default(now())
+  compatibility String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Unique constraint for version + theme + format
+  @@unique([version, theme, format])
+  @@map("token_releases")
+}
+
+// Enums
+enum MemberRole {
+  admin
+  editor
+  viewer
+}
+
+enum ApiScope {
+  read_tokens  @map("read:tokens")
+  write_tokens @map("write:tokens")
+}

@@ -15,7 +15,7 @@ describe('Tokens v1', () => {
   beforeAll(async () => {
     jwt = await loginAdmin();
     ({ tenant, project } = await createTenantProjectForAdmin());
-  });
+  }, 60000); // Increased timeout for MongoDB connection buffering
 
   it('creates, reads, updates and deletes a token', async () => {
     const name = uniqueName('token');

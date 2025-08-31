@@ -37,7 +37,18 @@ npm start                      # Production server
 src/
 ├── config/
 │   ├── db.js                 # MongoDB connection
+│   ├── prisma.js             # Prisma client configuration
+│   ├── supabase.js           # Supabase client configuration
 │   └── versioning.js         # API versioning config
+├── dal/                      # Database Abstraction Layer
+│   ├── interfaces/
+│   │   └── DatabaseAdapter.js # DAL interface contract
+│   ├── adapters/
+│   │   ├── MongoAdapter.js   # MongoDB/Mongoose adapter
+│   │   ├── SupabaseAdapter.js # Supabase/Prisma adapter (stub)
+│   │   └── DualWriteAdapter.js # Dual-write adapter (stub)
+│   ├── DatabaseFactory.js   # Adapter factory
+│   └── DatabaseService.js   # Main DAL service
 ├── controllers/              # Business logic
 │   ├── tokenController.js    # Token CRUD operations
 │   ├── authController.js     # Authentication (login)
@@ -80,10 +91,75 @@ src/
 └── index.js               # Express app entry point
 
 tests/                     # Test suites
+├── dal/                  # Database Abstraction Layer tests
 ├── integration/endpoints/ # API endpoint tests
 ├── helpers/              # Test utilities
 └── setup/               # Test environment setup
+
+prisma/                   # Prisma schema and migrations
+└── schema.prisma        # Database schema definition
 ```
+
+## Database Abstraction Layer (DAL)
+
+**Status**: 🔄 Active Migration - MongoDB to PostgreSQL (Supabase)
+
+The DAL provides a unified interface for database operations, enabling seamless migration between database systems without changing application logic.
+
+### Architecture Components
+
+**DatabaseService** (`src/dal/DatabaseService.js`): Main service used throughout the application
+- Singleton instance providing read/write operations
+- Separates read and write adapters for flexibility
+- Handles initialization and connection management
+
+**DatabaseFactory** (`src/dal/DatabaseFactory.js`): Creates appropriate adapters based on environment
+- `DB_READS`: Controls read operations (mongo | supabase)
+- `DB_WRITES`: Controls write operations (mongo | supabase | dual)
+
+**Adapters** (`src/dal/adapters/`):
+- **MongoAdapter**: Wraps existing Mongoose models ✅ *Implemented*
+- **SupabaseAdapter**: Prisma/PostgreSQL implementation 📝 *Coming in PR #5*
+- **DualWriteAdapter**: Writes to both databases 📝 *Coming in PR #6*
+
+### Configuration
+
+```bash
+# Current (MongoDB only)
+DB_READS=mongo
+DB_WRITES=mongo
+
+# Migration phases
+DB_READS=mongo
+DB_WRITES=dual      # Write to both MongoDB and Supabase
+
+# Target state (Supabase only)
+DB_READS=supabase
+DB_WRITES=supabase
+```
+
+### Usage in Controllers
+
+**Before (Direct Mongoose)**:
+```javascript
+const token = await Token.findById(id);
+```
+
+**After (DAL)**:
+```javascript
+import databaseService from '../dal/DatabaseService.js';
+const token = await databaseService.findTokenById(id);
+```
+
+### Testing
+
+DAL tests are in `tests/dal/`:
+- `MongoAdapter.test.js`: MongoDB adapter functionality
+- `DatabaseService.test.js`: Service layer and factory
+
+Run DAL tests: `npm test -- tests/dal/`
+
+---
 
 ## Key Concepts
 
