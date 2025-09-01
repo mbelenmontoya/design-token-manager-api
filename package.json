@@ -16,7 +16,10 @@
     "migration:status": "curl -s http://localhost:4000/status/database | jq .",
     "health:check": "curl -s http://localhost:4000/health | jq .",
     "prisma:generate": "npx prisma generate",
-    "prisma:validate": "npx prisma validate && npx prisma format --check"
+    "prisma:validate": "npx prisma validate && npx prisma format --check",
+    "prisma:studio": "npx prisma studio",
+    "bootstrap:supabase": "node scripts/bootstrapSupabase.js",
+    "smoke:supabase": "node scripts/smokeSupabase.js"
   },
   "jest": {
     "testEnvironment": "node"

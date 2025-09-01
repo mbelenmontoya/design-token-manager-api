@@ -97,6 +97,14 @@ class DatabaseService {
     return this.readAdapter.findTokensByTenant(tenantId, options);
   }
 
+  async countTokensByProject(projectId, options = {}) {
+    return this.readAdapter.countTokensByProject(projectId, options);
+  }
+
+  async countTokensByTenant(tenantId, options = {}) {
+    return this.readAdapter.countTokensByTenant(tenantId, options);
+  }
+
   async searchTokens(query, options = {}) {
     return this.readAdapter.searchTokens(query, options);
   }
@@ -224,6 +232,10 @@ class DatabaseService {
 
   async deleteApiKey(id) {
     return this.writeAdapter.deleteApiKey(id);
+  }
+
+  async rotateApiKey(id, prevHashedKey, newHashedKey) {
+    return this.writeAdapter.rotateApiKey(id, prevHashedKey, newHashedKey);
   }
 
   async createInvitation(invitationData) {

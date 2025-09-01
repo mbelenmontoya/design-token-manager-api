@@ -27,54 +27,47 @@ npm install
 cp .env.example .env
 ```
 
-### 2. Database Setup Options
-
-#### Option A: MongoDB Memory Server (Recommended for Testing)
+### 2. Database Setup (Supabase)
 ```bash
-# Already configured in tests - no setup needed
-# Uses mongodb-memory-server for isolated testing
-```
+# In Supabase
+# - Create project and set DB password
+# - Get Project URL and anon key
+# - Copy Postgres connection string (pooler preferred)
 
-#### Option B: Local MongoDB
-```bash
-# Install MongoDB locally or use Docker
-docker run --name mongo-test -p 27017:27017 -d mongo:7
+# In .env
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_ANON_KEY=<anon>
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require
+DB_READS=supabase
+DB_WRITES=supabase
 
-# Update .env
-MONGO_URI=mongodb://localhost:27017/design-token-test
-```
+# Provision tables
+npx prisma generate
+npx prisma db push
 
-#### Option C: MongoDB Atlas (Test Cluster)
-```bash
-# Create a test cluster on MongoDB Atlas
-# Update .env with test cluster URI
-MONGO_URI=mongodb+srv://testuser:testpass@test-cluster.mongodb.net/design-token-test
-```
-
-### 3. Supabase Setup (For Later PRs)
-```bash
-# Update .env with your test Supabase credentials
-SUPABASE_URL=https://your-test-project.supabase.co
-SUPABASE_ANON_KEY=your-test-anon-key
-DATABASE_URL=postgresql://postgres:password@db.your-test-project.supabase.co:5432/postgres
+# Bootstrap seed tenant/project/user + API key
+npm run bootstrap:supabase
 ```
 
 ## Testing Workflow by PR
 
-### PR #1: DAL Foundation Testing
+### PR #1-2: DAL + Controllers (Supabase)
 
 #### Quick Smoke Test (2 minutes)
 ```bash
-# 1. Run DAL tests
-npm test -- tests/dal/
-# Expected: All tests pass (40/40)
-
-# 2. Check health endpoints
+# 1. Start server
 npm run dev &
-sleep 5
-curl http://localhost:4000/health
+SERVER_PID=$!
+sleep 3
+
+# 2. Health endpoints
+curl http://localhost:4000/status/postgres
 curl http://localhost:4000/status/database
-kill %1  # Stop the server
+
+# 3. Smoke test (requires API_KEY, TENANT_ID, PROJECT_ID envs)
+API_KEY=... TENANT_ID=... PROJECT_ID=... npm run smoke:supabase
+
+kill $SERVER_PID
 ```
 
 #### Comprehensive Test (10 minutes)
@@ -175,7 +168,7 @@ diff baseline_tokens.json migrated_tokens.json
 kill %1
 ```
 
-### Future PRs: Dual-Write Testing
+### Future: Dual-Write Testing
 
 #### Configuration Testing
 ```bash

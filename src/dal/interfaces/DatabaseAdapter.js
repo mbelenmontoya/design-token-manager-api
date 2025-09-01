@@ -96,6 +96,15 @@ export class DatabaseAdapter {
     throw new Error('findTokensByTenant method must be implemented');
   }
 
+  // Token counts
+  async countTokensByProject(projectId, options = {}) {
+    throw new Error('countTokensByProject method must be implemented');
+  }
+
+  async countTokensByTenant(tenantId, options = {}) {
+    throw new Error('countTokensByTenant method must be implemented');
+  }
+
   async updateToken(id, tokenData) {
     throw new Error('updateToken method must be implemented');
   }
@@ -156,6 +165,11 @@ export class DatabaseAdapter {
 
   async deleteApiKey(id) {
     throw new Error('deleteApiKey method must be implemented');
+  }
+
+  // Atomic API key rotation (update only if previous hash matches)
+  async rotateApiKey(id, prevHashedKey, newHashedKey) {
+    throw new Error('rotateApiKey method must be implemented');
   }
 
   // Invitation operations

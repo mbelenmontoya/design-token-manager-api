@@ -29,11 +29,12 @@
 
 #### **Current Status**: 🔄 **IN PROGRESS**
 - ✅ Supabase project setup (COMPLETED - credentials available)
-- ❌ Prisma setup and schema definition
-- ❌ DAL layer implementation  
+- ✅ Prisma setup and schema definition (tables provisioned)
+- ✅ DAL layer foundation (Mongo + Supabase adapters implemented)
+- 🔄 Controller migration (tokens/import + middleware done)
 - ❌ Dual-write system
-- ✅ Health endpoints exist
-- ✅ CI with Stage-1 tests
+- ✅ Health endpoints (+ Postgres check)
+- 🔄 Tests: smoke script for Supabase; Jest update pending
 
 ---
 
@@ -148,12 +149,13 @@
 6. **Update health endpoints** to include Supabase connection status
 7. **Ensure CI pipeline** validates schema changes
 
-#### **Current Focus: PR #1 - DAL Foundation & MongoDB Adapter**
-- ✅ DAL interfaces and factory implemented
-- 🔄 MongoDB adapter implementation in progress
-- ✅ Configuration setup completed
-- 📝 Basic tests for adapter (next)
-- 📝 Update documentation (next)
+#### **Current Focus: PR #2 - Controller Migration (Tokens)**
+- ✅ Tokens controller migrated to DAL
+- ✅ Import controller migrated to DAL
+- ✅ Middleware (tenantContext, verifyApiKey) migrated
+- ✅ Supabase adapter implemented early to enable cutover
+- 🔄 Migrate API keys, categories, invitations, memberships, releases
+- 📝 Update docs and smoke testing (in progress)
 
 ### **Migration Strategy**
 - **Dual-write phase**: Write to both MongoDB and Supabase

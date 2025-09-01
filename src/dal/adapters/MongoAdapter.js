@@ -144,11 +144,14 @@ export class MongoAdapter extends DatabaseAdapter {
 
   async findTokensByProject(projectId, options = {}) {
     const query = Token.find({ project: projectId });
-    
+
     if (options.category) {
       query.where({ category: options.category });
     }
-    
+    if (options.name) {
+      query.where({ name: options.name });
+    }
+
     if (options.search) {
       query.where({
         $or: [
@@ -171,9 +174,12 @@ export class MongoAdapter extends DatabaseAdapter {
 
   async findTokensByTenant(tenantId, options = {}) {
     const query = Token.find({ tenant: tenantId });
-    
+
     if (options.category) {
       query.where({ category: options.category });
+    }
+    if (options.name) {
+      query.where({ name: options.name });
     }
     
     if (options.search) {
@@ -238,6 +244,40 @@ export class MongoAdapter extends DatabaseAdapter {
     return await mongoQuery.populate(['tenant', 'project']).exec();
   }
 
+  async countTokensByProject(projectId, options = {}) {
+    const filter = { project: projectId };
+    if (options.category) {
+      filter.category = options.category;
+    }
+    if (options.name) {
+      filter.name = options.name;
+    }
+    if (options.search) {
+      filter.$or = [
+        { name: { $regex: options.search, $options: 'i' } },
+        { description: { $regex: options.search, $options: 'i' } }
+      ];
+    }
+    return await Token.countDocuments(filter);
+  }
+
+  async countTokensByTenant(tenantId, options = {}) {
+    const filter = { tenant: tenantId };
+    if (options.category) {
+      filter.category = options.category;
+    }
+    if (options.name) {
+      filter.name = options.name;
+    }
+    if (options.search) {
+      filter.$or = [
+        { name: { $regex: options.search, $options: 'i' } },
+        { description: { $regex: options.search, $options: 'i' } }
+      ];
+    }
+    return await Token.countDocuments(filter);
+  }
+
   // Membership operations
   async createMembership(membershipData) {
     return await Membership.create(membershipData);
@@ -286,6 +326,15 @@ export class MongoAdapter extends DatabaseAdapter {
 
   async deleteApiKey(id) {
     return await ApiKey.findByIdAndDelete(id);
+  }
+
+  async rotateApiKey(id, prevHashedKey, newHashedKey) {
+    const updated = await ApiKey.findOneAndUpdate(
+      { _id: id, hashedKey: prevHashedKey },
+      { hashedKey: newHashedKey },
+      { new: true }
+    );
+    return Boolean(updated);
   }
 
   // Invitation operations

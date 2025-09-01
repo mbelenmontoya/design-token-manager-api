@@ -1,6 +1,7 @@
 import express from 'express';
 import { DEFAULT_API_VERSION, API_VERSIONS, VERSION_POLICY } from '../config/versioning.js';
 import databaseService from '../dal/DatabaseService.js';
+import prisma from '../config/prisma.js';
 
 const router = express.Router();
 
@@ -92,6 +93,18 @@ router.get('/database', async (_req, res) => {
       error: error.message,
       configuration: { reads: 'unknown', writes: 'unknown' }
     });
+  }
+});
+
+// Simple Postgres connectivity check via Prisma
+router.get('/postgres', async (_req, res) => {
+  try {
+    const start = Date.now();
+    const result = await prisma.$queryRaw`SELECT 1 as ok`;
+    const elapsedMs = Date.now() - start;
+    res.json({ ok: true, elapsedMs, result });
+  } catch (error) {
+    res.status(503).json({ ok: false, error: error.message });
   }
 });
 

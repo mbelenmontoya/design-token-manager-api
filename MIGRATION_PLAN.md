@@ -99,18 +99,12 @@ Safe, incremental migration from MongoDB to PostgreSQL using a Database Abstract
 ---
 
 ### **PR #5: Supabase Adapter Implementation**
-**Goal**: Create PostgreSQL/Prisma adapter
+Status: Completed early to enable PR #2 cutover
 
-**Scope**:
-- Implement `SupabaseAdapter` class
-- Map all MongoDB operations to Prisma
-- Handle data type conversions
-- Connection management
-
-**Testing**:
-- Supabase adapter against test database
-- Data consistency with MongoDB
-- Performance validation
+**Delivered**:
+- Implemented `SupabaseAdapter` class using Prisma
+- Mapped core operations (users, tenants, projects, tokens, memberships, categories, api keys, invitations, releases)
+- Health check via Prisma `$queryRaw` (SELECT 1)
 
 ---
 

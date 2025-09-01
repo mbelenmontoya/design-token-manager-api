@@ -10,43 +10,19 @@
 - CI/CD pipeline and PR safety tools implemented
 - Feature branch `feature/dal-foundation-pr1` created
 
-## ⚠️ BLOCKED: MongoDB Connection Issue
-**Root Cause**: No valid MongoDB credentials in `.env` file
-- Current `.env` contains placeholder values: `<username>`, `<password>`, `<cluster>`
-- Server cannot connect to database, causing all authentication operations to timeout
-- Tests fail because login operations require database access
+## ✅ Supabase Setup Complete
+Supabase project configured; Prisma schema pushed; DAL running with Supabase.
 
-## IMMEDIATE ACTION REQUIRED
-
-### 1. Configure MongoDB Connection
-Update `.env` file with real MongoDB credentials:
-
+### 1. Smoke Test Supabase
 ```bash
-# Replace these placeholder values with actual credentials:
-MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?retryWrites=true&w=majority
+API_KEY=... TENANT_ID=... PROJECT_ID=... npm run smoke:supabase
 ```
 
-**Required Information:**
-- MongoDB username
-- MongoDB password  
-- MongoDB cluster URL
-- Database name
+### 2. Continue Controller Migration (PR #2)
+- Migrate API keys, categories, invitations, memberships, releases to DAL
+- Keep API contracts stable
 
-### 2. Test the Configuration
-Once credentials are added, run these commands to verify:
-
-```bash
-# Test connection directly
-npm test -- tests/debug-mongo.test.js
-
-# Test authentication
-npm test -- tests/debug-auth.test.js
-
-# Run full integration tests
-npm run test:comprehensive
-```
-
-### 3. Once Tests Pass - Create PR #1
+### 3. Prepare PR once endpoints migrated
 ```bash
 # Add all changes
 git add .
@@ -69,34 +45,32 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 git push -u origin feature/dal-foundation-pr1
 
 # Create PR using GitHub CLI
-gh pr create --title "feat: DAL Foundation - MongoDB Adapter Implementation (PR #1)" --body "$(cat <<'EOF'
+gh pr create --title "feat: Supabase migration — DAL + Tokens (PR #2)" --body "$(cat <<'EOF'
 ## Summary
-- ✅ Complete Database Abstraction Layer (DAL) foundation
-- ✅ MongoDB adapter implementation wrapping existing Mongoose models
-- ✅ Prisma schema for future PostgreSQL migration
-- ✅ Enhanced health endpoints with DAL status reporting
-- ✅ Comprehensive testing infrastructure and CI pipeline
+- ✅ Supabase adapter + Prisma schema (tables provisioned)
+- ✅ DAL foundation + Mongo adapter
+- ✅ Tokens + import controllers migrated to DAL
+- ✅ Middlewares (tenantContext, verifyApiKey) migrated
+- ✅ Smoke test for Supabase endpoints
 
 ## Migration Progress
-This completes **Phase 1** of the database migration roadmap:
+Advances **Stage 1** database migration:
 - [x] DAL interfaces and factory pattern
-- [x] MongoDB adapter with full CRUD operations
+- [x] MongoDB + Supabase adapters
 - [x] Health monitoring and status endpoints
-- [x] Testing framework for database operations
+- [x] Tokens flow on Supabase
 
 ## Test Results
-All tests should pass with valid MongoDB credentials. Currently blocked on database connection configuration.
+Smoke tests pass for GET/POST tokens against Supabase.
 
 ## Test Plan
-- [x] Unit tests for DAL components
-- [x] Integration tests for health endpoints
-- [x] MongoDB adapter functionality tests
-- [ ] Full integration test suite (requires MongoDB credentials)
+- [x] Smoke test: tokens
+- [ ] Jest path for Supabase (follow-up)
 
 ## Files Added/Modified
 - **Core DAL**: `src/dal/` directory with interfaces, adapters, and services
 - **Configuration**: `prisma/schema.prisma`, database configs
-- **Testing**: `tests/dal/` directory with comprehensive test suite
+- **Testing**: `scripts/smokeSupabase.js` smoke tests
 - **Documentation**: Migration plan, testing guides, safety checklists
 - **Infrastructure**: GitHub workflows, PR templates
 
@@ -114,11 +88,10 @@ EOF
 4. **Testing Infrastructure**: Unit tests, integration tests, CI pipeline
 5. **Documentation**: Comprehensive migration plan and guides
 
-### ⚠️ What Needs MongoDB Credentials
-1. **Authentication Operations**: Login/JWT creation requires user lookup
-2. **CRUD Operations**: All database operations timeout without connection
-3. **Integration Tests**: Cannot test full API workflows
-4. **Health Checks**: Server reports unhealthy database status
+### ✅ Supabase Flow Working
+1. **Tokens**: GET/POST via API key
+2. **Import**: DAL-based upsert
+3. **Health**: `/status/postgres` and `/status/database`
 
 ### 🔧 Configuration Fixed
 - ✅ Fixed `bufferMaxEntries` Mongoose v8 compatibility issue
@@ -127,7 +100,7 @@ EOF
 - ✅ Improved error handling and logging
 
 ## Next Phase Preview
-Once PR #1 is merged, **PR #2** will begin migrating controllers to use the DAL instead of direct Mongoose calls, enabling dual-write capability for safe migration.
+Finish controller migrations → remove Mongo models → plan dual-write (optional) or full cutover.
 
 ## Files Ready for Commit
 All DAL implementation files are ready. The branch contains:

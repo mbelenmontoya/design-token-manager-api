@@ -28,6 +28,15 @@ npm run test:comprehensive
 CI=true npm run test:endpoints
 ```
 
+### Supabase Smoke Test (1-2 minutes)
+```bash
+# Run API and verify tokens endpoints (requires envs)
+export API_KEY=dtm_ak_...
+export TENANT_ID=...
+export PROJECT_ID=...
+npm run smoke:supabase
+```
+
 ### Performance Tests (5-10 minutes)
 ```bash
 # Performance validation
