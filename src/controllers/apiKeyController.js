@@ -1,6 +1,26 @@
 import crypto from 'crypto';
 import databaseService from '../dal/DatabaseService.js';
 
+export const listApiKeys = async (req, res, next) => {
+  try {
+    const keys = await databaseService.findApiKeysByProject(req.projectId);
+    const sanitized = (keys || []).map((k) => ({
+      id: k._id?.toString?.() || k.id,
+      tenantId: k.tenant?._id?.toString?.() || k.tenant?.id || k.tenantId,
+      projectId: k.project?._id?.toString?.() || k.project?.id || k.projectId,
+      scopes: Array.isArray(k.scopes) ? k.scopes.map(s => String(s).replace(/_/g, ':')) : [],
+      revoked: !!k.revoked,
+      lastUsedAt: k.lastUsedAt || null,
+      createdById: k.createdBy?._id?.toString?.() || k.createdBy?.id || k.createdById,
+      createdAt: k.createdAt,
+      updatedAt: k.updatedAt,
+    }));
+    res.json({ items: sanitized, total: sanitized.length });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const createApiKey = async (req, res, next) => {
   try {
     const { scopes = [] } = req.body;

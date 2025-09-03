@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+  listApiKeys,
   createApiKey,
   rotateApiKey,
   revokeApiKey,
@@ -49,6 +50,7 @@ const router = express.Router();
  *               $ref: '#/components/schemas/ApiKeyWithValue'
  */
 router.post('/', verifyJWT, tenantContext, requireRole(['admin']), createApiKey);
+router.get('/', verifyJWT, tenantContext, requireRole(['admin']), listApiKeys);
 
 /**
  * @swagger

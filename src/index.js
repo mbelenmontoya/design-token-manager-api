@@ -14,6 +14,7 @@ import versioning from './middleware/versioning.js';
 import statusRoutes from './routes/status.js';
 import releaseRoutes from './routes/releases.js';
 import apiKeyRoutes from './routes/apiKeys.js';
+import userRoutes from './routes/users.js';
 
 // Database Abstraction Layer
 import databaseService from './dal/DatabaseService.js';
@@ -157,6 +158,7 @@ app.use('/api/v1/memberships', membershipRoutes);
 app.use('/api/v1/api-keys', apiKeyRoutes);
 // Backwards compatibility for API key routes
 app.use('/api/api-keys', apiKeyRoutes);
+app.use('/api/v1/users', userRoutes);
 app.use('/api-docs/v1', swaggerUi.serve, swaggerUi.setup(swaggerSpecV1));
 
 

@@ -43,3 +43,26 @@ export async function deleteMembership(req, res, next) {
     next(err);
   }
 }
+
+export async function getMyMemberships(req, res, next) {
+  try {
+    const list = await databaseService.findMembershipsByUser(req.user.id);
+    const items = (list || []).map((m) => ({
+      id: m._id?.toString?.() || m.id,
+      role: m.role,
+      user: {
+        id: m.user?._id?.toString?.() || m.user?.id || m.userId,
+        username: m.user?.username,
+      },
+      tenant: {
+        id: m.tenant?._id?.toString?.() || m.tenant?.id || m.tenantId,
+        name: m.tenant?.name,
+      },
+      createdAt: m.createdAt,
+      updatedAt: m.updatedAt,
+    }));
+    res.json({ items, total: items.length });
+  } catch (err) {
+    next(err);
+  }
+}
