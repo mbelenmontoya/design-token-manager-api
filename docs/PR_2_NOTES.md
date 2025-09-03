@@ -37,6 +37,16 @@ Optional: run automated Supabase tests:
 npm run test:supabase
 ```
 
+Supabase Jest results (local):
+```
+PASS  tests/supabase/invitations.memberships.supabase.test.js
+PASS  tests/supabase/releases.supabase.test.js
+PASS  tests/supabase/tokens.apiKey.supabase.test.js
+
+Test Suites: 3 passed, 3 total
+Tests:       3 passed, 3 total
+```
+
 ## Manual Checks
 - Invitations: `POST /api/v1/tenants/:tenantId/invitations` (as admin JWT)
 - Accept invitation: `POST /api/v1/invitations/:token/accept` (JWT of invited user)
@@ -45,5 +55,5 @@ npm run test:supabase
 ## Notes
 - Mongo adapter files remain for reference but are not loaded when `DB_*` set to `supabase`.
 - Auth login now validates via Prisma user table using bcrypt compare.
-
-CI: trigger touch to verify workflow runs on push.
+ - Documentation consolidated under `docs/`; added `docs/TESTING_LOCAL_SUPABASE.md`.
+ - CI temporarily disabled (manual-only) per project decision; local testing is the source of truth.
