@@ -34,89 +34,44 @@ jobs:
     - name: Check for security vulnerabilities
       run: npm audit --audit-level=moderate
       
-  # Database and DAL tests (fast)
-  dal-tests:
-    name: DAL & Database Tests
+  # Supabase-focused tests
+  supabase-tests:
+    name: Supabase Tests
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-        
+
     - name: Install dependencies
       run: npm ci
-      
-    - name: Setup test environment
+
+    - name: Generate Prisma client
+      run: npx prisma generate
+
+    - name: Bootstrap Supabase data
       run: |
-        export JWT_SECRET="ci-test-secret"
-        export DB_READS="mongo"
-        export DB_WRITES="mongo"
-        
-    - name: Run DAL tests
-      run: npm test -- tests/dal/
-      env:
-        JWT_SECRET: ci-test-secret
-        DB_READS: mongo
-        DB_WRITES: mongo
+        set -e
+        node scripts/bootstrapSupabase.js | tee bootstrap.out
+        echo "Extracting bootstrap outputs..."
+        TENANT_ID=$(grep -E "^Tenant ID:" bootstrap.out | awk -F': ' '{print $2}')
+        PROJECT_ID=$(grep -E "^Project ID:" bootstrap.out | awk -F': ' '{print $2}')
+        API_KEY=$(grep -E "^API Key\s+:" bootstrap.out | awk -F': ' '{print $2}')
+        echo "TENANT_ID=$TENANT_ID" >> $GITHUB_ENV
+        echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+        echo "API_KEY=$API_KEY" >> $GITHUB_ENV
 
-  # Unit tests (excluding integration)
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run unit tests
-      run: npm test -- --testPathIgnorePatterns=tests/integration/
+    - name: Run Supabase tests
+      run: npm run test:supabase
       env:
-        JWT_SECRET: ci-test-secret
-        DB_READS: mongo
-        DB_WRITES: mongo
-
-  # Full integration tests (slower, more comprehensive)
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run integration tests
-      run: npm run test:endpoints
-      env:
-        CI: true
-        JWT_SECRET: ci-test-secret
-        JWT_EXPIRES_IN: 1h
-        CLIENT_URL: http://localhost:5173
-        DB_READS: mongo
-        DB_WRITES: mongo
+        DB_READS: supabase
+        DB_WRITES: supabase
 
   # Database migration validation
   migration-validation:
@@ -283,7 +238,7 @@ jobs:
 status-check:
   name: All Checks Passed
   runs-on: ubuntu-latest
-  needs: [lint, dal-tests, unit-tests, integration-tests, prisma-validation, security-scan, docs-validation, build-validation]
+  needs: [lint, supabase-tests, prisma-validation, security-scan, docs-validation, build-validation]
   if: always()
   
   steps:
