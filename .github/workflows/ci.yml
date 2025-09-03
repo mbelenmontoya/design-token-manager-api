@@ -66,12 +66,15 @@ jobs:
         echo "TENANT_ID=$TENANT_ID" >> $GITHUB_ENV
         echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
         echo "API_KEY=$API_KEY" >> $GITHUB_ENV
+      env:
+        DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
 
     - name: Run Supabase tests
       run: npm run test:supabase
       env:
         DB_READS: supabase
         DB_WRITES: supabase
+        DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
 
   # Database migration validation
   migration-validation:

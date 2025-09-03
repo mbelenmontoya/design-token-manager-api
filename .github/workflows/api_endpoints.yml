@@ -22,6 +22,7 @@ jobs:
       CLIENT_URL: http://localhost:5173
       DB_READS: supabase
       DB_WRITES: supabase
+      DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
