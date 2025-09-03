@@ -69,12 +69,31 @@ jobs:
       env:
         DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
 
-    - name: Run Supabase tests
-      run: npm run test:supabase
+    - name: Start server (background)
+      run: |
+        node src/index.js &
+        echo $! > server_pid
+        for i in {1..60}; do
+          if curl -sf http://localhost:4000/status/postgres >/dev/null; then
+            echo "Server responding"; break; fi; sleep 1; done
+        test -f server_pid || (echo "Server failed to start" && exit 1)
       env:
         DB_READS: supabase
         DB_WRITES: supabase
         DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+        JWT_SECRET: ci-test-secret
+
+    - name: Run Supabase tests
+      run: CI_SERVER_MANAGED=1 npm run test:supabase
+      env:
+        DB_READS: supabase
+        DB_WRITES: supabase
+        DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+
+    - name: Stop server
+      if: always()
+      run: |
+        if [ -f server_pid ]; then kill $(cat server_pid) || true; fi
 
   # Database migration validation
   migration-validation:

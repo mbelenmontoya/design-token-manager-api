@@ -42,11 +42,23 @@ jobs:
           echo "TENANT_ID=$TENANT_ID" >> $GITHUB_ENV
           echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
           echo "API_KEY=$API_KEY" >> $GITHUB_ENV
+      - name: Start server (background)
+        run: |
+          node src/index.js &
+          echo $! > server_pid
+          for i in {1..60}; do
+            if curl -sf http://localhost:4000/status/postgres >/dev/null; then
+              echo "Server responding"; break; fi; sleep 1; done
+          test -f server_pid || (echo "Server failed to start" && exit 1)
       - run: mkdir -p reports
       - name: Run Supabase tests (API key + invitations + releases)
-        run: npm run test:supabase -- --json --outputFile=reports/supabase.json || npm run test:supabase
+        run: CI_SERVER_MANAGED=1 npm run test:supabase -- --json --outputFile=reports/supabase.json || CI_SERVER_MANAGED=1 npm run test:supabase
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: supabase-test-report
           path: reports/**/*.json
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f server_pid ]; then kill $(cat server_pid) || true; fi
