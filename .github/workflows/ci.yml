@@ -2,9 +2,14 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, develop, 'migration/*' ]
+    branches:
+      - main
+      - develop
+      - 'migration/*'
+      - 'chore/*'
   pull_request:
-    branches: [ main, develop ]
+    # Trigger on PRs targeting any branch (default types: opened, synchronize, reopened)
+    {}
 
 env:
   NODE_VERSION: '18'
@@ -98,7 +103,7 @@ jobs:
         test -f server_pid || (echo "Server failed to start" && exit 1)
       env:
         DB_READS: ${{ env.DB_READS }}
-        DB_WRITES: ${ { env.DB_WRITES }}
+        DB_WRITES: ${{ env.DB_WRITES }}
         DATABASE_URL: ${{ env.DATABASE_URL }}
         JWT_SECRET: ci-test-secret
         SUPABASE_URL: ${{ env.SUPABASE_URL }}
