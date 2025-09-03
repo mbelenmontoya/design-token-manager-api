@@ -29,7 +29,7 @@ A RESTful API for managing design tokens with multi-tenant architecture, JWT aut
 
 ### Prerequisites
 * Node.js v18+ and npm
-* MongoDB Atlas account
+* Supabase project (PostgreSQL)
 
 ### Setup
 ```bash
@@ -38,19 +38,38 @@ git clone <repository-url>
 cd design-token-manager-api
 npm install
 
-# Environment setup
+# Environment setup (Supabase)
 cp .env.example .env
-# Edit .env with your MongoDB credentials
+# Required env vars:
+# - SUPABASE_URL=https://<project-ref>.supabase.co
+# - SUPABASE_ANON_KEY=<anon>
+# - DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require
+# - DB_READS=supabase
+# - DB_WRITES=supabase
 
-# Seed initial data
-node scripts/seedUser.js
-node scripts/seedCategories.js
+# Generate Prisma client and push schema
+npx prisma generate
+npx prisma db push
+
+# Bootstrap a demo tenant/project/user + API key
+npm run bootstrap:supabase
 
 # Start development server
 npm run dev
 ```
 
 The API will be available at `http://localhost:4000`
+
+### Quick Smoke Test (Supabase)
+```bash
+# From bootstrap output copy API_KEY, TENANT_ID, PROJECT_ID
+export API_KEY=dtm_ak_...
+export TENANT_ID=...
+export PROJECT_ID=...
+
+# Run smoke test for tokens endpoints (GET+POST)
+npm run smoke:supabase
+```
 
 ## API Documentation
 

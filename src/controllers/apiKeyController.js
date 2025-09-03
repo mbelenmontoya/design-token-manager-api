@@ -1,19 +1,19 @@
 import crypto from 'crypto';
-import ApiKey from '../models/ApiKey.js';
+import databaseService from '../dal/DatabaseService.js';
 
 export const createApiKey = async (req, res, next) => {
   try {
     const { scopes = [] } = req.body;
     const rawKey = crypto.randomBytes(32).toString('hex');
     const hashedKey = crypto.createHash('sha256').update(rawKey).digest('hex');
-    const apiKey = await ApiKey.create({
-      tenant_id: req.tenantId,
-      project_id: req.projectId,
+    const apiKey = await databaseService.createApiKey({
+      tenantId: req.tenantId,
+      projectId: req.projectId,
       hashedKey,
       scopes,
-      created_by: req.user.id,
+      createdById: req.user.id,
     });
-    res.status(201).json({ apiKey: rawKey, id: apiKey._id });
+    res.status(201).json({ apiKey: rawKey, id: apiKey._id?.toString?.() || apiKey.id });
   } catch (err) {
     next(err);
   }
@@ -21,28 +21,20 @@ export const createApiKey = async (req, res, next) => {
 
 export const rotateApiKey = async (req, res, next) => {
   try {
-    const apiKey = await ApiKey.findOne({
-      _id: req.params.id,
-      tenant_id: req.tenantId,
-      project_id: req.projectId,
-      revoked: false,
-    });
+    const apiKey = await databaseService.findApiKeyById(req.params.id);
     if (!apiKey) {
+      return res.status(404).json({ message: 'API key not found' });
+    }
+    // Validate scope to tenant/project
+    const keyTenant = apiKey.tenant?._id?.toString?.() || apiKey.tenant?.id || apiKey.tenant || apiKey.tenantId;
+    const keyProject = apiKey.project?._id?.toString?.() || apiKey.project?.id || apiKey.project || apiKey.projectId;
+    if (String(keyTenant) !== String(req.tenantId) || String(keyProject) !== String(req.projectId) || apiKey.revoked) {
       return res.status(404).json({ message: 'API key not found' });
     }
     const rawKey = crypto.randomBytes(32).toString('hex');
     const newHash = crypto.createHash('sha256').update(rawKey).digest('hex');
-    // Attempt an atomic rotation by including the previously fetched hashed key
-    // in the update filter. If another rotation completes first, this update will
-    // affect zero documents and we can surface a conflict to the caller.
-    const updated = await ApiKey.findOneAndUpdate(
-      {
-        _id: apiKey._id,
-        hashedKey: apiKey.hashedKey,
-      },
-      { hashedKey: newHash },
-      { new: true }
-    );
+    const id = apiKey._id?.toString?.() || apiKey.id;
+    const updated = await databaseService.rotateApiKey(id, apiKey.hashedKey, newHash);
     if (!updated) {
       // Edge case: two rotate requests raced and a different hashedKey was already
       // persisted. Clients should retry to obtain the latest key.
@@ -59,17 +51,16 @@ export const rotateApiKey = async (req, res, next) => {
 
 export const revokeApiKey = async (req, res, next) => {
   try {
-    const apiKey = await ApiKey.findOne({
-      _id: req.params.id,
-      tenant_id: req.tenantId,
-      project_id: req.projectId,
-      revoked: false,
-    });
+    const apiKey = await databaseService.findApiKeyById(req.params.id);
     if (!apiKey) {
       return res.status(404).json({ message: 'API key not found' });
     }
-    apiKey.revoked = true;
-    await apiKey.save();
+    const keyTenant = apiKey.tenant?._id?.toString?.() || apiKey.tenant?.id || apiKey.tenant || apiKey.tenantId;
+    const keyProject = apiKey.project?._id?.toString?.() || apiKey.project?.id || apiKey.project || apiKey.projectId;
+    if (String(keyTenant) !== String(req.tenantId) || String(keyProject) !== String(req.projectId) || apiKey.revoked) {
+      return res.status(404).json({ message: 'API key not found' });
+    }
+    await databaseService.updateApiKey(apiKey._id?.toString?.() || apiKey.id, { revoked: true });
     res.json({ message: 'API key revoked' });
   } catch (err) {
     next(err);

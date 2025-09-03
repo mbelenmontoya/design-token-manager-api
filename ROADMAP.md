@@ -1,6 +1,6 @@
 # Design Token Manager API - Roadmap
 
-> **Current State**: API runs with Express; initial MongoDB testing exists. **Decision**: Migrate DB to PostgreSQL + Prisma with DAL and dual-write cutover. Health endpoint exists; auditing harness & Stage-1 tests are running in CI.
+> **Current State**: API runs with Express; initial MongoDB testing exists. **Decision**: Migrate DB to Supabase (managed PostgreSQL) + Prisma with DAL and dual-write cutover. Health endpoint exists; auditing harness & Stage-1 tests are running in CI.
 
 > **Pain-Point Goals**: Strong multi-tenant model and RBAC for enterprise. Versioned tokens + immutable artifacts (fast CDN). Easy exports and eventually GitHub PR push. Clear observability (health, metrics, audit).
 
@@ -13,25 +13,28 @@
 #### **Objectives**: Move to PostgreSQL safely, keep behavior intact, don't break deploy
 
 #### **Deliverables**:
+- **Supabase Project Setup**: New Supabase project with PostgreSQL database
 - **Prisma Schema**: Tenants, Projects, Users, Memberships, Tokens (+Version history), ApiKeys, Invitations, (Usage counters optional)
-- **DAL Layer**: Interfaces + two adapters (mongo, pg), selected via env: `DB_READS=mongo|postgres`, `DB_WRITES=mongo|dual|postgres`
+- **DAL Layer**: Interfaces + two adapters (mongo, supabase), selected via env: `DB_READS=mongo|supabase`, `DB_WRITES=mongo|dual|supabase`
 - **Controllers**: Refactor to call DAL only; responses unchanged
 - **Backfill & Compare Scripts**: Migrate historical data, diff reports, retry tool
-- **Health/Status**: `/health` includes `postgres.connected`; `/status` returns storage modes (reads/writes)
+- **Health/Status**: `/health` includes `supabase.connected`; `/status` returns storage modes (reads/writes)
 - **CI**: Schema validate/generate; optional dry compare on seed
 
 #### **Acceptance Criteria**:
 - API passes Stage-1 tests with dual-write
-- `/health` shows PostgreSQL OK when reachable
+- `/health` shows Supabase connection OK when reachable
 - No route/contract changes
 - Deploy system not broken
 
 #### **Current Status**: 🔄 **IN PROGRESS**
-- ❌ PostgreSQL + Prisma setup
-- ❌ DAL layer implementation
+- ✅ Supabase project setup (COMPLETED - credentials available)
+- ✅ Prisma setup and schema definition (tables provisioned)
+- ✅ DAL layer foundation (Mongo + Supabase adapters implemented)
+- 🔄 Controller migration (tokens/import + middleware done)
 - ❌ Dual-write system
-- ✅ Health endpoints exist
-- ✅ CI with Stage-1 tests
+- ✅ Health endpoints (+ Postgres check)
+- 🔄 Tests: smoke script for Supabase; Jest update pending
 
 ---
 
@@ -129,18 +132,36 @@
 ## Current Technical Priorities
 
 ### **Stage 1 Immediate Actions**
-1. **Set up PostgreSQL + Prisma** schema and connection
-2. **Implement DAL layer** with MongoDB and PostgreSQL adapters
-3. **Create dual-write system** with environment toggles
-4. **Build backfill and compare scripts** for data migration
-5. **Update health endpoints** to include PostgreSQL status
-6. **Ensure CI pipeline** validates schema changes
+
+> **📋 Detailed Migration Plan**: See [MIGRATION_PLAN.md](MIGRATION_PLAN.md) for complete PR-based implementation strategy
+
+#### **User Tasks (Database Setup)**:
+1. ✅ **Create Supabase project** and obtain connection credentials
+2. **Configure Supabase database** settings and security rules  
+3. ✅ **Update .env file** with Supabase connection details
+
+#### **Development Tasks (Code)**:
+1. ✅ **Install and configure Prisma** with Supabase connection
+2. ✅ **Define Prisma schema** matching current MongoDB models
+3. 🔄 **Implement DAL layer** with MongoDB and Supabase adapters (PR-based approach)
+4. **Create dual-write system** with environment toggles
+5. **Build backfill and compare scripts** for data migration
+6. **Update health endpoints** to include Supabase connection status
+7. **Ensure CI pipeline** validates schema changes
+
+#### **Current Focus: PR #2 - Controller Migration (Tokens)**
+- ✅ Tokens controller migrated to DAL
+- ✅ Import controller migrated to DAL
+- ✅ Middleware (tenantContext, verifyApiKey) migrated
+- ✅ Supabase adapter implemented early to enable cutover
+- 🔄 Migrate API keys, categories, invitations, memberships, releases
+- 📝 Update docs and smoke testing (in progress)
 
 ### **Migration Strategy**
-- **Dual-write phase**: Write to both MongoDB and PostgreSQL
+- **Dual-write phase**: Write to both MongoDB and Supabase
 - **Validation phase**: Compare data consistency between databases
-- **Read cutover**: Switch reads to PostgreSQL
-- **Write cutover**: Switch writes to PostgreSQL only
+- **Read cutover**: Switch reads to Supabase
+- **Write cutover**: Switch writes to Supabase only
 - **Cleanup phase**: Remove MongoDB adapter and dependencies
 
 ---

@@ -1,5 +1,4 @@
-import Token from '../models/Token.js';
-import Category from '../models/Category.js';
+import databaseService from '../dal/DatabaseService.js';
 
 export const importTokens = async (req, res) => {
   const tokens = req.body;
@@ -16,16 +15,35 @@ export const importTokens = async (req, res) => {
 
       if (!name || !value) throw new Error('`name` and `value` are required');
 
-      // Upsert category
-      await Category.updateOne({ name: category }, { name: category }, { upsert: true });
+      // Upsert category via DAL
+      if (category) {
+        const existingCat = await databaseService.findCategoryByName(category);
+        if (!existingCat) {
+          await databaseService.createCategory({ name: category });
+        }
+      }
 
-      const result = await Token.findOneAndUpdate(
-        { name, tenant: req.tenantId, project: req.projectId },
-        { tenant: req.tenantId, project: req.projectId, name, value, category, description },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
-      if (result.createdAt === result.updatedAt) created++;
-      else updated++;
+      // Check if token exists by name within project
+      const existing = await databaseService.findTokensByProject(req.projectId, { name, limit: 1 });
+      if (existing && existing.length > 0) {
+        const tokenId = existing[0]._id?.toString?.() || existing[0].id;
+        await databaseService.updateToken(tokenId, {
+          value,
+          category,
+          description,
+        });
+        updated++;
+      } else {
+        await databaseService.createToken({
+          tenant: req.tenantId,
+          project: req.projectId,
+          name,
+          value,
+          category,
+          description,
+        });
+        created++;
+      }
     } catch (err) {
       errors.push({ name: t.name || '(missing name)', error: err.message });
     }
@@ -33,4 +51,3 @@ export const importTokens = async (req, res) => {
 
   res.json({ created, updated, errors });
 };
-

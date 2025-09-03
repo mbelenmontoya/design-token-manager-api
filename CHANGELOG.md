@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Documentation restructure: moved roadmap to ROADMAP.md
 - Planned migration from MongoDB to PostgreSQL + Prisma
+ - Supabase adapter implemented; tokens + import controllers migrated to DAL
+ - Middlewares (tenantContext, verifyApiKey) migrated to DAL
+ - Added Supabase smoke test script and Postgres status endpoint
 
 ### Deprecated
 - MongoDB as primary database (migrating to PostgreSQL)
