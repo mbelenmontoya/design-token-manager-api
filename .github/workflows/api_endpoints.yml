@@ -1,4 +1,4 @@
-name: API Endpoints Check
+name: API Endpoints Check (Supabase)
 
 on:
   pull_request:
@@ -16,27 +16,36 @@ jobs:
   endpoints:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
-    services:
-      mongo:
-        image: mongo:6
-        ports:
-          - 27017:27017
     env:
       PORT: 4000
       JWT_SECRET: ci-smoke-secret
       CLIENT_URL: http://localhost:5173
-      MONGO_URI: mongodb://127.0.0.1:27017/design_tokens_ci?retryWrites=true&w=majority
+      DB_READS: supabase
+      DB_WRITES: supabase
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm ci
-      - run: node src/scripts/seedUser.js
+      - name: Generate Prisma client
+        run: npx prisma generate
+      - name: Bootstrap Supabase data
+        run: |
+          set -e
+          node scripts/bootstrapSupabase.js | tee bootstrap.out
+          echo "Extracting bootstrap outputs..."
+          TENANT_ID=$(grep -E "^Tenant ID:" bootstrap.out | awk -F': ' '{print $2}')
+          PROJECT_ID=$(grep -E "^Project ID:" bootstrap.out | awk -F': ' '{print $2}')
+          API_KEY=$(grep -E "^API Key\s+:" bootstrap.out | awk -F': ' '{print $2}')
+          echo "TENANT_ID=$TENANT_ID" >> $GITHUB_ENV
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          echo "API_KEY=$API_KEY" >> $GITHUB_ENV
       - run: mkdir -p reports
-      - run: npm run test:endpoints -- --json --outputFile=reports/endpoints.json
+      - name: Run Supabase tests (API key + invitations + releases)
+        run: npm run test:supabase -- --json --outputFile=reports/supabase.json || npm run test:supabase
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: endpoints-test-report
+          name: supabase-test-report
           path: reports/**/*.json
