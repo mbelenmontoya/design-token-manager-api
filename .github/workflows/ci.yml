@@ -55,6 +55,19 @@ jobs:
     - name: Generate Prisma client
       run: npx prisma generate
 
+    - name: Load .env fallback (if secrets missing)
+      run: |
+        set -e
+        if [ -z "${{ secrets.SUPABASE_DATABASE_URL }}" ]; then
+          echo "Using .env fallback for DATABASE_URL and Supabase vars"
+          set -a
+          source .env
+          set +a
+          echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_ENV
+          echo "SUPABASE_URL=$SUPABASE_URL" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> $GITHUB_ENV
+        fi
+
     - name: Bootstrap Supabase data
       run: |
         set -e
@@ -82,6 +95,8 @@ jobs:
         DB_WRITES: supabase
         DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
         JWT_SECRET: ci-test-secret
+        SUPABASE_URL: ${{ env.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
 
     - name: Run Supabase tests
       run: CI_SERVER_MANAGED=1 npm run test:supabase
@@ -89,6 +104,9 @@ jobs:
         DB_READS: supabase
         DB_WRITES: supabase
         DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+        API_KEY: ${{ env.API_KEY }}
+        TENANT_ID: ${{ env.TENANT_ID }}
+        PROJECT_ID: ${{ env.PROJECT_ID }}
 
     - name: Stop server
       if: always()
