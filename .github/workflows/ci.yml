@@ -3,13 +3,11 @@ name: CI Pipeline
 on:
   push:
     branches:
-      - main
-      - develop
-      - 'migration/*'
-      - 'chore/*'
+      - '**'
   pull_request:
-    # Trigger on PRs targeting any branch (default types: opened, synchronize, reopened)
-    {}
+    branches:
+      - '**'
+  workflow_dispatch:
 
 env:
   NODE_VERSION: '18'
