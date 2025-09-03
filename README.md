@@ -76,11 +76,11 @@ npm run smoke:supabase
 Interactive Swagger documentation available at: `http://localhost:4000/api-docs/v1`
 
 ### Key Endpoints
-- **Authentication**: `POST /api/v1/auth/login`
-- **Tokens**: Full CRUD at `/api/v1/tokens`
-- **API Keys**: Management at `/api/v1/api-keys`
-- **Team Management**: `/api/v1/invitations`, `/api/v1/memberships`
-- **Health**: `/health`, `/status`
+- Authentication: `POST /api/v1/auth/login`
+- Tokens: Full CRUD at `/api/v1/tokens`
+- API Keys: Management at `/api/v1/api-keys`
+- Team Management: `/api/v1/invitations`, `/api/v1/memberships`
+- Status: `/status/database`, `/status/postgres`
 
 ## Development
 
@@ -93,23 +93,26 @@ npm test                 # Run all tests
 npm run test:endpoints   # Integration tests
 ```
 
+### Local Testing (Supabase)
+- See `docs/TESTING_LOCAL_SUPABASE.md` for step-by-step local testing using your `.env` variables (no CI required).
+
 ### Tech Stack
-- **Node.js 18+** with Express.js
-- **MongoDB** with Mongoose ODM
-- **JWT** authentication + **API key** auth
-- **Swagger** for API documentation
-- **Jest** for testing
+- Node.js 18+ with Express.js
+- PostgreSQL (Supabase) via Prisma
+- JWT authentication + API key auth
+- Swagger for API documentation
+- Jest for testing
 
 ## Project History
 
-For detailed project history and what changes were made when, see [CHANGELOG.md](CHANGELOG.md).  
-For future plans and development roadmap, see [ROADMAP.md](ROADMAP.md).
+For detailed project history and what changes were made when, see [docs/CHANGELOG.md](docs/CHANGELOG.md).  
+For future plans and development roadmap, see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 Key highlights:
-- **Multi-tenant API** with MongoDB backend
-- **Comprehensive authentication** (JWT + API keys)
-- **Planned migration** to PostgreSQL + Prisma
-- **5-stage development roadmap** for enterprise features
+- Multi-tenant API with DAL (Supabase/Postgres active)
+- Comprehensive authentication (JWT + API keys)
+- Migration from MongoDB to Supabase completed for controllers
+- 5-stage development roadmap for enterprise features
 
 ## Contributing
 

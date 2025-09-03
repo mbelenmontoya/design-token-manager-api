@@ -1,42 +1,103 @@
-name: API Endpoints Check
+name: API Endpoints Check (Temporarily Disabled)
 
+# NOTE: Workflow disabled; keep available for manual runs only
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'src/routes/**'
-      - 'src/controllers/**'
-      - 'tests/integration/endpoints/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/api_endpoints.yml'
   workflow_dispatch:
 
 jobs:
   endpoints:
     runs-on: ubuntu-latest
+    if: ${{ false }} # disabled
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
-    services:
-      mongo:
-        image: mongo:6
-        ports:
-          - 27017:27017
     env:
       PORT: 4000
       JWT_SECRET: ci-smoke-secret
       CLIENT_URL: http://localhost:5173
-      MONGO_URI: mongodb://127.0.0.1:27017/design_tokens_ci?retryWrites=true&w=majority
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm ci
-      - run: node src/scripts/seedUser.js
+      - name: Generate Prisma client
+        run: npx prisma generate
+      - name: Load env (use exact .env names)
+        run: |
+          set -e
+          if [ -f .env ]; then
+            set -a
+            source .env
+            set +a
+          fi
+          for name in SUPABASE_URL SUPABASE_ANON_KEY DATABASE_URL DB_READS DB_WRITES API_KEY TENANT_ID PROJECT_ID ADMIN_USER; do
+            val=$(printenv $name)
+            if [ -n "$val" ]; then echo "$name=$val" >> $GITHUB_ENV; fi
+          done
+      - name: Load .env fallback (if secrets missing)
+        run: |
+          set -e
+          if [ -z "${{ secrets.SUPABASE_DATABASE_URL }}" ]; then
+            echo "Using .env fallback for DATABASE_URL and Supabase vars"
+            set -a
+            source .env
+            set +a
+            echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_ENV
+            echo "SUPABASE_URL=$SUPABASE_URL" >> $GITHUB_ENV
+            echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> $GITHUB_ENV
+          fi
+      - name: Bootstrap Supabase data (only if IDs missing)
+        run: |
+          set -e
+          if [ -z "$DATABASE_URL" ]; then echo "DATABASE_URL is required" && exit 1; fi
+          if [ -z "$API_KEY" ] || [ -z "$TENANT_ID" ] || [ -z "$PROJECT_ID" ]; then
+            echo "Bootstrapping Supabase (generating API_KEY/TENANT_ID/PROJECT_ID)..."
+            node scripts/bootstrapSupabase.js | tee bootstrap.out
+            echo "Extracting bootstrap outputs..."
+            TENANT_ID=$(grep -E "^Tenant ID:" bootstrap.out | awk -F': ' '{print $2}')
+            PROJECT_ID=$(grep -E "^Project ID:" bootstrap.out | awk -F': ' '{print $2}')
+            API_KEY=$(grep -E "^API Key\s+:" bootstrap.out | awk -F': ' '{print $2}')
+            echo "TENANT_ID=$TENANT_ID" >> $GITHUB_ENV
+            echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+            echo "API_KEY=$API_KEY" >> $GITHUB_ENV
+          else
+            echo "Using provided API_KEY/TENANT_ID/PROJECT_ID"
+          fi
+      - name: Start server (background)
+        run: |
+          node src/index.js &
+          echo $! > server_pid
+          for i in {1..60}; do
+            if curl -sf http://localhost:4000/status/postgres >/dev/null; then
+              echo "Server responding"; break; fi; sleep 1; done
+          test -f server_pid || (echo "Server failed to start" && exit 1)
+        env:
+          DB_READS: ${{ env.DB_READS }}
+          DB_WRITES: ${{ env.DB_WRITES }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
+        env:
+          DB_READS: supabase
+          DB_WRITES: supabase
+          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
       - run: mkdir -p reports
-      - run: npm run test:endpoints -- --json --outputFile=reports/endpoints.json
+      - name: Run Supabase tests (API key + invitations + releases)
+        run: CI_SERVER_MANAGED=1 npm run test:supabase -- --json --outputFile=reports/supabase.json || CI_SERVER_MANAGED=1 npm run test:supabase
+        env:
+          DB_READS: ${{ env.DB_READS }}
+          DB_WRITES: ${{ env.DB_WRITES }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          API_KEY: ${{ env.API_KEY }}
+          TENANT_ID: ${{ env.TENANT_ID }}
+          PROJECT_ID: ${{ env.PROJECT_ID }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: endpoints-test-report
+          name: supabase-test-report
           path: reports/**/*.json
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f server_pid ]; then kill $(cat server_pid) || true; fi

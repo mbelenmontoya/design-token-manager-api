@@ -398,14 +398,3 @@ npm run test:endpoints             # Integration tests (CI only)
 npm run dev                        # Start development server
 npm run lint                       # Check code quality
 
-# Health checks
-curl localhost:4000/health         # Basic health
-curl localhost:4000/status/database # DAL status
-
-# Database operations
-npx prisma generate                # Generate Prisma client
-npx prisma validate               # Validate schema
-node scripts/seedUser.js          # Create admin user
-```
-
-**Remember**: When in doubt, run the tests! The comprehensive test suite is designed to catch issues before they reach production.

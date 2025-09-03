@@ -19,7 +19,8 @@
     "prisma:validate": "npx prisma validate && npx prisma format --check",
     "prisma:studio": "npx prisma studio",
     "bootstrap:supabase": "node scripts/bootstrapSupabase.js",
-    "smoke:supabase": "node scripts/smokeSupabase.js"
+    "smoke:supabase": "node scripts/smokeSupabase.js",
+    "test:supabase": "node --experimental-vm-modules node_modules/.bin/jest --config tests/supabase/jest.supabase.config.js --runInBand"
   },
   "jest": {
     "testEnvironment": "node"

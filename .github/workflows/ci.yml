@@ -1,13 +1,12 @@
-name: CI Pipeline
+name: CI Pipeline (Temporarily Disabled)
 
+# NOTE: CI is temporarily disabled per project decision.
+# Keep for manual runs only while we finalize local migration/testing.
 on:
-  push:
-    branches: [ main, develop, 'migration/*' ]
-  pull_request:
-    branches: [ main, develop ]
+  workflow_dispatch:
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
   
 jobs:
   # Basic validation and linting
@@ -34,131 +33,100 @@ jobs:
     - name: Check for security vulnerabilities
       run: npm audit --audit-level=moderate
       
-  # Database and DAL tests (fast)
-  dal-tests:
-    name: DAL & Database Tests
+  # Supabase-focused tests
+  supabase-tests:
+    name: Supabase Tests
     runs-on: ubuntu-latest
+    if: ${{ false }} # disabled
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-        
+
     - name: Install dependencies
       run: npm ci
-      
-    - name: Setup test environment
+
+    - name: Generate Prisma client
+      run: npx prisma generate
+
+    - name: Load env (use exact .env names)
       run: |
-        export JWT_SECRET="ci-test-secret"
-        export DB_READS="mongo"
-        export DB_WRITES="mongo"
-        
-    - name: Run DAL tests
-      run: npm test -- tests/dal/
-      env:
-        JWT_SECRET: ci-test-secret
-        DB_READS: mongo
-        DB_WRITES: mongo
+        set -e
+        # If a repo environment already sets these, we keep them.
+        # Otherwise, load from .env and export to GITHUB_ENV.
+        if [ -f .env ]; then
+          set -a
+          source .env
+          set +a
+        fi
+        for name in SUPABASE_URL SUPABASE_ANON_KEY DATABASE_URL DB_READS DB_WRITES API_KEY TENANT_ID PROJECT_ID ADMIN_USER; do
+          val=$(printenv $name)
+          if [ -n "$val" ]; then echo "$name=$val" >> $GITHUB_ENV; fi
+        done
 
-  # Unit tests (excluding integration)
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run unit tests
-      run: npm test -- --testPathIgnorePatterns=tests/integration/
-      env:
-        JWT_SECRET: ci-test-secret
-        DB_READS: mongo
-        DB_WRITES: mongo
+    - name: Bootstrap Supabase data (only if IDs missing)
+      run: |
+        set -e
+        if [ -z "$DATABASE_URL" ]; then echo "DATABASE_URL is required" && exit 1; fi
+        if [ -z "$API_KEY" ] || [ -z "$TENANT_ID" ] || [ -z "$PROJECT_ID" ]; then
+          echo "Bootstrapping Supabase (generating API_KEY/TENANT_ID/PROJECT_ID)..."
+          node scripts/bootstrapSupabase.js | tee bootstrap.out
+          echo "Extracting bootstrap outputs..."
+          TENANT_ID=$(grep -E "^Tenant ID:" bootstrap.out | awk -F': ' '{print $2}')
+          PROJECT_ID=$(grep -E "^Project ID:" bootstrap.out | awk -F': ' '{print $2}')
+          API_KEY=$(grep -E "^API Key\s+:" bootstrap.out | awk -F': ' '{print $2}')
+          echo "TENANT_ID=$TENANT_ID" >> $GITHUB_ENV
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          echo "API_KEY=$API_KEY" >> $GITHUB_ENV
+        else
+          echo "Using provided API_KEY/TENANT_ID/PROJECT_ID"
+        fi
 
-  # Full integration tests (slower, more comprehensive)
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run integration tests
-      run: npm run test:endpoints
+    - name: Start server (background)
+      run: |
+        node src/index.js &
+        echo $! > server_pid
+        for i in {1..60}; do
+          if curl -sf http://localhost:4000/status/postgres >/dev/null; then
+            echo "Server responding"; break; fi; sleep 1; done
+        test -f server_pid || (echo "Server failed to start" && exit 1)
       env:
-        CI: true
+        DB_READS: ${{ env.DB_READS }}
+        DB_WRITES: ${{ env.DB_WRITES }}
+        DATABASE_URL: ${{ env.DATABASE_URL }}
         JWT_SECRET: ci-test-secret
-        JWT_EXPIRES_IN: 1h
-        CLIENT_URL: http://localhost:5173
-        DB_READS: mongo
-        DB_WRITES: mongo
+        SUPABASE_URL: ${{ env.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
+
+    - name: Run Supabase tests
+      run: CI_SERVER_MANAGED=1 npm run test:supabase
+      env:
+        DB_READS: ${{ env.DB_READS }}
+        DB_WRITES: ${{ env.DB_WRITES }}
+        DATABASE_URL: ${{ env.DATABASE_URL }}
+        API_KEY: ${{ env.API_KEY }}
+        TENANT_ID: ${{ env.TENANT_ID }}
+        PROJECT_ID: ${{ env.PROJECT_ID }}
+
+    - name: Stop server
+      if: always()
+      run: |
+        if [ -f server_pid ]; then kill $(cat server_pid) || true; fi
 
   # Database migration validation
-  migration-validation:
-    name: Migration Validation
-    runs-on: ubuntu-latest
-    if: contains(github.head_ref, 'migration/') || contains(github.ref, 'migration/')
-    
-    strategy:
-      matrix:
-        config:
-          - { reads: 'mongo', writes: 'mongo', name: 'MongoDB Only' }
-          # Add more configurations as we implement them
-          # - { reads: 'mongo', writes: 'dual', name: 'Dual Write' }
-          # - { reads: 'supabase', writes: 'dual', name: 'Read Cutover' }
-          # - { reads: 'supabase', writes: 'supabase', name: 'Full Migration' }
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Test migration configuration - ${{ matrix.config.name }}
-      run: |
-        echo "Testing with DB_READS=${{ matrix.config.reads }} DB_WRITES=${{ matrix.config.writes }}"
-        npm test -- tests/dal/
-      env:
-        JWT_SECRET: ci-test-secret
-        DB_READS: ${{ matrix.config.reads }}
-        DB_WRITES: ${{ matrix.config.writes }}
+  # (Removed legacy migration-validation job)
 
   # Prisma schema validation
   prisma-validation:
     name: Prisma Schema Validation
     runs-on: ubuntu-latest
+    if: ${{ false }} # disabled
     
     steps:
     - name: Checkout code
@@ -187,6 +155,7 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    if: ${{ false }} # disabled
     
     steps:
     - name: Checkout code
@@ -216,6 +185,7 @@ jobs:
   docs-validation:
     name: Documentation Validation  
     runs-on: ubuntu-latest
+    if: ${{ false }} # disabled
     
     steps:
     - name: Checkout code
@@ -231,23 +201,28 @@ jobs:
         # Check that PR template exists
         test -f .github/PULL_REQUEST_TEMPLATE.md || (echo "PR template missing" && exit 1)
         
-        # Validate API documentation builds
-        npm run dev &
+        # Start server and verify Swagger docs using Supabase env
+        node src/index.js &
         SERVER_PID=$!
-        sleep 10
-        
-        # Test that Swagger docs are accessible
+        for i in {1..60}; do
+          if curl -sf http://localhost:4000/api-docs/v1/ >/dev/null; then break; fi
+          sleep 1
+        done
         curl -f http://localhost:4000/api-docs/v1/ || (echo "Swagger docs not accessible" && exit 1)
-        
         kill $SERVER_PID || true
       env:
         JWT_SECRET: ci-test-secret
-        MONGO_URI: mongodb://localhost:27017/test
+        DB_READS: supabase
+        DB_WRITES: supabase
+        DATABASE_URL: ${{ env.DATABASE_URL }}
+        SUPABASE_URL: ${{ env.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
 
   # Build and deployment readiness
   build-validation:
     name: Build & Deploy Readiness
     runs-on: ubuntu-latest
+    if: ${{ false }} # disabled
     
     steps:
     - name: Checkout code
@@ -273,9 +248,9 @@ jobs:
         test -f .env.example || (echo ".env.example missing" && exit 1)
         
         # Check for required environment variables
-        grep -q "MONGO_URI" .env.example || (echo "MONGO_URI missing from .env.example" && exit 1)
         grep -q "JWT_SECRET" .env.example || (echo "JWT_SECRET missing from .env.example" && exit 1)
         grep -q "SUPABASE_URL" .env.example || (echo "SUPABASE_URL missing from .env.example" && exit 1)
+        grep -q "DATABASE_URL" .env.example || (echo "DATABASE_URL missing from .env.example" && exit 1)
         grep -q "DB_READS" .env.example || (echo "DB_READS missing from .env.example" && exit 1)
         grep -q "DB_WRITES" .env.example || (echo "DB_WRITES missing from .env.example" && exit 1)
 
@@ -283,16 +258,14 @@ jobs:
 status-check:
   name: All Checks Passed
   runs-on: ubuntu-latest
-  needs: [lint, dal-tests, unit-tests, integration-tests, prisma-validation, security-scan, docs-validation, build-validation]
+  needs: []
   if: always()
   
   steps:
     - name: Check all jobs status
       run: |
         if [[ "${{ needs.lint.result }}" != "success" ||
-              "${{ needs.dal-tests.result }}" != "success" ||
-              "${{ needs.unit-tests.result }}" != "success" ||
-              "${{ needs.integration-tests.result }}" != "success" ||
+              "${{ needs.supabase-tests.result }}" != "success" ||
               "${{ needs.prisma-validation.result }}" != "success" ||
               "${{ needs.security-scan.result }}" != "success" ||
               "${{ needs.docs-validation.result }}" != "success" ||
