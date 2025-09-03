@@ -1,4 +1,8 @@
+import { jest } from '@jest/globals';
 import { get, post } from '../helpers/httpClient.js';
+
+// Allow extra time for remote DB + server startup in local runs
+jest.setTimeout(20000);
 
 const required = (name) => {
   const v = process.env[name];
@@ -32,4 +36,3 @@ describe('Supabase: Tokens via API key', () => {
     expect(list2.status).toBe(200);
   });
 });
-

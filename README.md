@@ -105,8 +105,8 @@ npm run test:endpoints   # Integration tests
 
 ## Project History
 
-For detailed project history and what changes were made when, see [CHANGELOG.md](CHANGELOG.md).  
-For future plans and development roadmap, see [ROADMAP.md](ROADMAP.md).
+For detailed project history and what changes were made when, see [docs/CHANGELOG.md](docs/CHANGELOG.md).  
+For future plans and development roadmap, see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 Key highlights:
 - Multi-tenant API with DAL (Supabase/Postgres active)
