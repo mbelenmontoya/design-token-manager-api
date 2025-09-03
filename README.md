@@ -93,6 +93,9 @@ npm test                 # Run all tests
 npm run test:endpoints   # Integration tests
 ```
 
+### Local Testing (Supabase)
+- See `docs/TESTING_LOCAL_SUPABASE.md` for step-by-step local testing using your `.env` variables (no CI required).
+
 ### Tech Stack
 - Node.js 18+ with Express.js
 - PostgreSQL (Supabase) via Prisma

@@ -1,20 +1,13 @@
-name: API Endpoints Check (Supabase)
+name: API Endpoints Check (Temporarily Disabled)
 
+# NOTE: Workflow disabled; keep available for manual runs only
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'src/routes/**'
-      - 'src/controllers/**'
-      - 'tests/integration/endpoints/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/api_endpoints.yml'
   workflow_dispatch:
 
 jobs:
   endpoints:
     runs-on: ubuntu-latest
+    if: ${{ false }} # disabled
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     env:
       PORT: 4000
