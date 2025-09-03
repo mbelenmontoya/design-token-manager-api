@@ -45,3 +45,5 @@ npm run test:supabase
 ## Notes
 - Mongo adapter files remain for reference but are not loaded when `DB_*` set to `supabase`.
 - Auth login now validates via Prisma user table using bcrypt compare.
+
+CI: trigger touch to verify workflow runs on push.
