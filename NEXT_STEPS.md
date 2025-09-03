@@ -19,8 +19,11 @@ API_KEY=... TENANT_ID=... PROJECT_ID=... npm run smoke:supabase
 ```
 
 ### 2. Continue Controller Migration (PR #2)
-- Migrate API keys, categories, invitations, memberships, releases to DAL
-- Keep API contracts stable
+Status: Completed in this iteration
+- Tokens, API keys, categories already on DAL
+- Invitations, memberships, token releases migrated to DAL
+- Removed Mongo wiring from app startup and health endpoints
+- Dropped `src/config/db.js` and `src/models/*`
 
 ### 3. Prepare PR once endpoints migrated
 ```bash
@@ -45,26 +48,30 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 git push -u origin feature/dal-foundation-pr1
 
 # Create PR using GitHub CLI
-gh pr create --title "feat: Supabase migration — DAL + Tokens (PR #2)" --body "$(cat <<'EOF'
+gh pr create --title "feat: Supabase migration — DAL cutover (PR #2)" --body "$(cat <<'EOF'
 ## Summary
 - ✅ Supabase adapter + Prisma schema (tables provisioned)
-- ✅ DAL foundation + Mongo adapter
+- ✅ DAL foundation
 - ✅ Tokens + import controllers migrated to DAL
 - ✅ Middlewares (tenantContext, verifyApiKey) migrated
-- ✅ Smoke test for Supabase endpoints
+- ✅ Invitations, memberships, token releases migrated to DAL
+- ✅ Removed Mongo wiring and models
+- ✅ Smoke test for Supabase tokens endpoints
 
 ## Migration Progress
-Advances **Stage 1** database migration:
+Advances database migration:
 - [x] DAL interfaces and factory pattern
-- [x] MongoDB + Supabase adapters
-- [x] Health monitoring and status endpoints
+- [x] Supabase adapter
+- [x] Status endpoints (/status/database, /status/postgres)
 - [x] Tokens flow on Supabase
+- [x] Invitations/memberships/releases on Supabase
 
 ## Test Results
-Smoke tests pass for GET/POST tokens against Supabase.
+Smoke tests pass for GET/POST tokens against Supabase. Include run output below.
 
 ## Test Plan
 - [x] Smoke test: tokens
+- [ ] Manual check: invitations/memberships accept/update/delete
 - [ ] Jest path for Supabase (follow-up)
 
 ## Files Added/Modified

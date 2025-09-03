@@ -17,8 +17,8 @@ class DatabaseService {
     }
 
     try {
-      this.readAdapter = DatabaseFactory.createReadAdapter();
-      this.writeAdapter = DatabaseFactory.createWriteAdapter();
+      this.readAdapter = await DatabaseFactory.createReadAdapter();
+      this.writeAdapter = await DatabaseFactory.createWriteAdapter();
 
       await this.readAdapter.connect();
       if (this.readAdapter !== this.writeAdapter) {

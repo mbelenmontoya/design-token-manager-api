@@ -32,7 +32,8 @@
 
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import bcrypt from 'bcryptjs';
+import databaseService from '../dal/DatabaseService.js';
 
 const router = express.Router();
 
@@ -42,13 +43,17 @@ const router = express.Router();
 router.post('/login', async (req, res, next) => {
     try {
       const { username, password } = req.body;
-      const user = await User.findOne({ username });
-      if (!user || !(await user.matchPassword(password))) {
+      const user = await databaseService.findUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       // sign a token
       const token = jwt.sign(
-        { id: user._id },
+        { id: user.id || user._id?.toString?.() },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN }
       );

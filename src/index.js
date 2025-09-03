@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import connectDB from './config/db.js';
 import tokenRoutes from './routes/tokens.js';
 import errorHandler from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
@@ -15,7 +14,6 @@ import versioning from './middleware/versioning.js';
 import statusRoutes from './routes/status.js';
 import releaseRoutes from './routes/releases.js';
 import apiKeyRoutes from './routes/apiKeys.js';
-import mongoose from 'mongoose';
 
 // Database Abstraction Layer
 import databaseService from './dal/DatabaseService.js';
@@ -168,101 +166,19 @@ app.get('/', (req, res) => {
   res.send('Design Token Manager API is running 🚀');
 });
 
-app.get('/health', async (_req, res) => {
-  const mongoConnected = mongoose.connection.readyState === 1;
-  let dalHealth = null;
-  
-  try {
-    // Initialize DAL if not already done
-    if (!databaseService.isInitialized) {
-      await databaseService.initialize();
-    }
-    dalHealth = await databaseService.healthCheck();
-  } catch (error) {
-    dalHealth = {
-      status: 'error',
-      message: error.message,
-      configuration: { reads: 'unknown', writes: 'unknown' }
-    };
-  }
-  
-  const isHealthy = mongoConnected && 
-                   dalHealth && 
-                   dalHealth.read?.status === 'healthy' && 
-                   dalHealth.write?.status === 'healthy';
-  
-  // Always return 200 (endpoint is working), but indicate health status in body
-  // This allows tests and monitoring to work even when databases are unavailable
-  res.status(200).json({
-    ok: isHealthy,
-    mongo: { connected: mongoConnected },
-    dal: dalHealth
-  });
-});
-
 // 6) Start server
 const start = async () => {
-  // In CI environment, MongoDB should be available - try harder to connect
-  const isCI = process.env.CI || process.env.NODE_ENV === 'ci';
-  let mongoConnected = false;
-  
-  if (isCI) {
-    // In CI, retry MongoDB connection multiple times
-    for (let attempt = 1; attempt <= 10; attempt++) {
-      try {
-        const conn = await connectDB();
-        mongoConnected = true;
-        // Wait for connection to be fully ready and test it
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        // Test the connection with a simple operation
-        await mongoose.connection.db.admin().ping();
-        console.log(`✅ MongoDB connection verified with ping`);
-        // Ensure connection is in connected state
-        if (mongoose.connection.readyState !== 1) {
-          throw new Error(`Connection not in ready state: ${mongoose.connection.readyState}`);
-        }
-        break;
-      } catch (error) {
-        console.error(`❌ MongoDB connection attempt ${attempt}/10 failed:`, error.message);
-        if (attempt === 10) {
-          console.error('❌ MongoDB connection failed after 10 attempts in CI - this will cause test failures');
-          throw error; // Fail startup in CI if we can't connect
-        } else {
-          console.log(`🔄 Retrying MongoDB connection in 3 seconds...`);
-          await new Promise(resolve => setTimeout(resolve, 3000));
-        }
-      }
-    }
-  } else {
-    // In development, try once but don't fail startup
-    try {
-      await connectDB();
-      mongoConnected = true;
-    } catch (error) {
-      console.error('❌ MongoDB connection error:', error.message);
-      console.log('🔄 Server will start anyway, MongoDB connection will be retried');
-    }
-  }
-  
   // Initialize Database Abstraction Layer
   try {
     await databaseService.initialize();
     console.log('✅ Database Abstraction Layer initialized');
   } catch (error) {
     console.error('❌ DAL initialization error:', error.message);
-    if (isCI) {
-      console.log('❌ DAL initialization failed in CI - this may cause test failures');
-    } else {
-      console.log('🔄 DAL will be initialized on first health check');
-    }
   }
   
   const PORT = process.env.PORT || 4000;
   app.listen(PORT, () => {
     console.log(`🚀 Server listening on http://localhost:${PORT}`);
-    if (isCI && !mongoConnected) {
-      console.log('⚠️  Server started in CI mode but MongoDB is not connected');
-    }
   });
 };
 

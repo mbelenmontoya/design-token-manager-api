@@ -1,9 +1,10 @@
-import TokenRelease from '../models/TokenRelease.js';
+import databaseService from '../dal/DatabaseService.js';
 
 export const getReleaseTokens = async (req, res) => {
   const { semver } = req.params;
   const { theme = 'base', format = 'json' } = req.query;
-  const release = await TokenRelease.findOne({ version: semver, theme, format });
+  const releases = await databaseService.findTokenReleases({ version: semver, theme, format, limit: 1 });
+  const release = Array.isArray(releases) && releases.length > 0 ? releases[0] : null;
   if (!release) {
     return res.status(404).json({ message: 'Release not found' });
   }
@@ -21,7 +22,8 @@ export const getReleaseTokens = async (req, res) => {
 export const getReleaseManifest = async (req, res) => {
   const { semver } = req.params;
   const { theme = 'base', format = 'json' } = req.query;
-  const release = await TokenRelease.findOne({ version: semver, theme, format });
+  const releases = await databaseService.findTokenReleases({ version: semver, theme, format, limit: 1 });
+  const release = Array.isArray(releases) && releases.length > 0 ? releases[0] : null;
   if (!release) {
     return res.status(404).json({ message: 'Release not found' });
   }
