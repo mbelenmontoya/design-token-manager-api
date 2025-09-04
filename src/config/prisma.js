@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+// Prisma client is generated to src/generated/prisma via prisma/schema.prisma
+import { PrismaClient } from '../generated/prisma/index.js';
 
 let prisma;
 

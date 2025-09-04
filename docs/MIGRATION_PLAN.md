@@ -1,14 +1,10 @@
 # Database Migration Plan: MongoDB → PostgreSQL (Supabase)
 
-## ⚠️ Current Status: BLOCKED on MongoDB Credentials
+## ✅ Current Status: Supabase Cutover Complete (Supabase-only runtime)
 
-**Active Phase**: PR #1 - DAL Foundation  
-**Progress**: Implementation Complete, **BLOCKED** on MongoDB connection  
-**Blocker**: Need valid MongoDB credentials in `.env` file (currently has placeholder values)  
-**Next Action**: Update `.env` with real credentials → test → create PR #1  
-**Branch**: `feature/dal-foundation-pr1` (ready to commit once tested)
+Active phase complete: DAL foundation and controller migrations landed; Mongo wiring removed. Local-first testing with Supabase is the source of truth (see docs/TESTING_LOCAL_SUPABASE.md). Dual-write/backfill phases are optional future work if needed.
 
-📋 **See NEXT_STEPS.md for immediate action items**
+📋 See docs/ROADMAP.md for next initiatives and docs/NEXT_STEPS.md for recent notes.
 
 ---
 
@@ -527,4 +523,3 @@ DB_WRITES=supabase
 
 ### **Overall Migration Success**:
 - 🎯 Zero downtime during cutover
-

@@ -54,38 +54,13 @@ time curl http://localhost:4000/health
 npm run dev
 
 # Then in another terminal:
-npm run health:check          # Basic health
-npm run migration:status      # Detailed DAL status  
-curl localhost:4000/health    # Raw health check
-```
-
-### Health Endpoint Responses
-```bash
-# Healthy system (MongoDB connected, DAL working)
-{
-  "ok": true,
-  "mongo": { "connected": true },
-  "dal": {
-    "read": { "status": "healthy", "database": "mongodb", "adapter": "MongoAdapter" },
-    "write": { "status": "healthy", "database": "mongodb", "adapter": "MongoAdapter" },
-    "configuration": { "reads": "mongo", "writes": "mongo" }
-  }
-}
+curl -s localhost:4000/status/database | jq .    # DAL + configuration
+curl -s localhost:4000/status/postgres | jq .    # Prisma connectivity
 ```
 
 ## 🔧 Database Configuration Testing
 
-### Test Different Configurations
-```bash
-# MongoDB only (current state)
-DB_READS=mongo DB_WRITES=mongo npm run test:dal
-
-# Dual-write (future state)  
-# DB_READS=mongo DB_WRITES=dual npm run test:dal
-
-# Full migration (target state)
-# DB_READS=supabase DB_WRITES=supabase npm run test:dal
-```
+This project runs Supabase-only. DB_READS/DB_WRITES are expected to be `supabase`.
 
 ### Prisma Operations
 ```bash

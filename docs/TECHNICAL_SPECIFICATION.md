@@ -1,8 +1,37 @@
 # Design Token Manager API - Technical Specification
 
+Note: Current runtime is Supabase/PostgreSQL via Prisma behind a Database Abstraction Layer (DAL). MongoDB and Mongoose content in this document remains for historical context and will be progressively refactored. See docs/ROADMAP.md for the up-to-date plan and docs/TESTING_LOCAL_SUPABASE.md for local setup.
+
 ## System Architecture
 
-### High-Level Architecture
+### High-Level Architecture (Current)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Client Applications                      │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ HTTPS/REST API
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│              Design Token Manager API                       │
+├─────────────────────────────────────────────────────────────┤
+│  Node.js + Express + Middleware Stack                      │
+│  + Swagger (OpenAPI), JWT + API Key                        │
+│  + Database Abstraction Layer (DAL)                        │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ Prisma Client
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                Supabase / PostgreSQL (Prisma)              │
+├─────────────────────────────────────────────────────────────┤
+│  Multi-tenant schema: Users • Tenants • Projects • Tokens  │
+│  API Keys • Memberships • Invitations • Categories         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### High-Level Architecture (Legacy Mongo — Historical)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

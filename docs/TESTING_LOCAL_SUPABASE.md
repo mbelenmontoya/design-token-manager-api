@@ -54,6 +54,21 @@ npm run smoke:supabase
 ```
 Expected output ends with: `All smoke tests passed ✅`
 
+### Quick endpoint checks
+```
+# Status endpoints
+npm run smoke:status
+
+# Current user's memberships (JWT)
+ADMIN_USERNAME=admin@example.com ADMIN_PASSWORD=Admin#123 npm run smoke:memberships
+
+# List API keys for project (JWT admin)
+TENANT_ID=... PROJECT_ID=... ADMIN_USERNAME=... ADMIN_PASSWORD=... npm run smoke:api-keys
+
+# End-to-end bundle (status + memberships + api-keys + tokens)
+API_KEY=... TENANT_ID=... PROJECT_ID=... ADMIN_USERNAME=... ADMIN_PASSWORD=... npm run smoke:all
+```
+
 ## Run Supabase test suite locally
 These are integration tests that start from your running server or can start it automatically.
 
@@ -82,4 +97,3 @@ Covers:
 
 ## Next steps
 - Once local testing stabilizes, we’ll reintroduce CI with the same variable names and minimal steps.
-

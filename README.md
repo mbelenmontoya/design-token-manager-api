@@ -95,6 +95,7 @@ npm run test:endpoints   # Integration tests
 
 ### Local Testing (Supabase)
 - See `docs/TESTING_LOCAL_SUPABASE.md` for step-by-step local testing using your `.env` variables (no CI required).
+- Quick check: run `npm run local:verify` to start the server, check status, run Supabase tests, and smoke tests (requires `API_KEY`, `TENANT_ID`, `PROJECT_ID`).
 
 ### Tech Stack
 - Node.js 18+ with Express.js
