@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-09-04
+
+### Added
+- Endpoints: `GET /api/v1/users/me/memberships` (JWT) to list current user memberships.
+- Endpoints: `GET /api/v1/api-keys` (JWT admin + tenant/project headers) to list project API keys.
+- Local smoke scripts to validate critical flows before pushing:
+  - `smoke:status`, `smoke:memberships`, `smoke:api-keys`, `smoke:all`.
+
+### Changed
+- Supabase-only runtime: removed Mongo wiring and models; DAL factory simplified to Supabase adapter only.
+- Controllers for invitations, memberships, and token releases migrated to DAL (Prisma/Supabase).
+- Prisma import switched to `@prisma/client`; added `postinstall` to generate client for deploy.
+- Documentation consolidated under `docs/` and updated roadmap with current state and next steps.
+- Tests: Supabase Jest suite stabilized (dotenv load, ESM jest import, longer timeout for API-key test) and Prisma disconnect on teardown.
+
+### Removed
+- Legacy Mongo adapters (`MongoAdapter`, `DualWriteAdapter`) and scripts (`seedUser`, `seedCategories`, `migrateTokens`).
+- Mongo-related tests and dependencies (`mongoose`, `mongodb-memory-server`).
+
+### Notes
+- CI is temporarily disabled per project decision; local testing (smoke + Supabase Jest) is the source of truth.
+
 ### Changed
 - Documentation restructure: moved roadmap to ROADMAP.md
 - Planned migration from MongoDB to PostgreSQL + Prisma
