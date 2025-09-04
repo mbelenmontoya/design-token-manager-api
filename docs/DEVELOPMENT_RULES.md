@@ -16,7 +16,8 @@ Before starting any development work, review these files in order:
 npm run lint                   # Check code quality
 npm test                      # Verify tests pass
 npm run test:endpoints        # Check API integration tests
-curl http://localhost:4000/health  # Check system health
+curl http://localhost:4000/status/postgres  # Prisma connectivity
+curl http://localhost:4000/status/database  # DAL configuration/health
 ```
 
 ### 3. **Understand Current Stage**
@@ -71,7 +72,7 @@ curl http://localhost:4000/health  # Check system health
 ### Database Migration (Stage 1 Priority)
 - **Prisma first**: Define schema in Prisma, generate migrations
 - **DAL pattern**: All database calls through Data Access Layer
-- **Dual-write**: Support both MongoDB and PostgreSQL during transition
+- **Dual-write**: Historical note — runtime is Supabase-only; dual-write plan retained for reference
 - **No breaking changes**: API contracts must remain stable
 
 ### API Development
@@ -98,10 +99,10 @@ curl http://localhost:4000/health  # Check system health
 
 ### ❌ **Must Complete Before Stage 2**
 1. **PostgreSQL + Prisma setup**: Schema definition and connection
-2. **DAL layer implementation**: MongoDB and PostgreSQL adapters
-3. **Dual-write system**: Environment-based database selection
+2. **DAL layer implementation**: Supabase (PostgreSQL) adapter active
+3. **Dual-write system**: Historical (kept for reference)
 4. **Backfill scripts**: Data migration and comparison tools
-5. **Health endpoints**: PostgreSQL status in `/health`
+5. **Health endpoints**: PostgreSQL status at `/status/postgres`
 6. **CI schema validation**: Automated schema checks
 
 ### ✅ **Already Complete**

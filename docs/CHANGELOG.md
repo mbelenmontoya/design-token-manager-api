@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-09-04
+
+### Added
+- Swagger/OpenAPI refresh: schemas normalized to `id`/`tenantId`/`projectId`, header parameters `x-tenant-id`, `x-project-id`, documented users/memberships and API key routes.
+- Local verification script `npm run local:verify` (status + Supabase tests + smokes).
+
+### Changed
+- Prisma client import now targets generated path `src/generated/prisma`.
+- Health tests updated to `/status/database` and `/status/postgres`.
+
+### Removed
+- Legacy Mongo/Mongoose tests and setup files.
+
 ## [0.3.0] - 2025-09-04
 
 ### Added

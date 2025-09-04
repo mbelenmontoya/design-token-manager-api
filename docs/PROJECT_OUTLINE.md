@@ -16,7 +16,7 @@
 - Team management with invitations and memberships
 - Interactive Swagger/OpenAPI documentation
 - Comprehensive test suite with Jest and Supertest
-- MongoDB integration with Mongoose ODM
+- Supabase/PostgreSQL via Prisma (current runtime). Legacy Mongo notes are historical.
 - Express middleware for CORS, logging, and error handling
 
 ### 🔄 In Progress
@@ -39,7 +39,7 @@
 ### Backend Architecture
 - **Node.js 18+** with ES modules support
 - **Express 5.1.0** web framework with middleware
-- **MongoDB Atlas** cloud database via Mongoose ODM
+- **Supabase/PostgreSQL** via Prisma client
 - **JWT** for secure user authentication
 - **bcryptjs** for password hashing and security
 
@@ -53,7 +53,7 @@
 - **ESLint** for code quality and consistency
 - **Jest** for unit and integration testing
 - **Supertest** for HTTP endpoint testing
-- **MongoDB Memory Server** for test isolation
+- Supabase integration tests and smoke scripts for verification
 - **nodemon** for development server auto-reload
 
 ## Key Project Processes
@@ -257,7 +257,8 @@
 
 ### System
 - `GET /status` - API health check
-- `GET /health` - Database connectivity check
+- `GET /status/postgres` - Database connectivity check
+- `GET /status/database` - DAL configuration and health
 - `GET /api-docs/v1` - Interactive API documentation
 
 ---
@@ -266,7 +267,7 @@
 
 ### Prerequisites
 - Node.js 18+ and npm
-- MongoDB Atlas account
+- Supabase project and database URL
 - Git version control
 - Code editor (VS Code recommended)
 

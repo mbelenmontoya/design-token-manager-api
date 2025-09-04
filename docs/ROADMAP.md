@@ -27,7 +27,7 @@
 - No breaking changes to API contracts (stable responses; `id` normalization)
 - Deploy system healthy (Render deploy uses `@prisma/client` + postinstall generate)
 
-#### **Current Status**: ✅ Core migration landed; cleanup in progress
+#### **Current Status**: ✅ Core migration landed; Swagger/docs cleanup done
 - ✅ Supabase project setup
 - ✅ Prisma schema and generated client
 - ✅ DAL foundation (Supabase active)
@@ -35,7 +35,7 @@
 - ✅ Mongo wiring/models removed
 - ✅ Status endpoints
 - ✅ Local smoke + Supabase Jest tests
-- 🔄 Swagger/OpenAPI refresh (next)
+- ✅ Swagger/OpenAPI refresh (schemas normalized; endpoints documented)
 
 ---
 
@@ -134,26 +134,21 @@
 
 ### **Near-term Tasks (Next Sprint)**
 
-> **📋 Detailed Migration Plan**: See [docs/MIGRATION_PLAN.md](MIGRATION_PLAN.md) for the PR-based strategy
+> See [docs/MIGRATION_PLAN.md](MIGRATION_PLAN.md) for historical plan; runtime is Supabase-only.
 
-#### Done today
-1. Controllers migrated to DAL (tokens/import/categories/api-keys/invitations/memberships/releases)
-2. Removed Mongo wiring and models; Supabase-only factory
-3. New endpoints: `GET /api/v1/users/me/memberships`, `GET /api/v1/api-keys`
-4. Render deploy fix (`@prisma/client` + postinstall generate)
-5. Local smoke and Supabase Jest tests green
+#### Recently completed
+1. Swagger/OpenAPI refresh (schemas normalized to `id`, new endpoints documented)
+2. Removed Mongo tests and setup; Supabase tests + smoke green
+3. Local verification script (`npm run local:verify`)
 
-#### Next (tomorrow)
-1. Swagger/OpenAPI refresh
-   - Normalize to `id` (drop `_id` in docs)
-   - Document new endpoints (my memberships, API keys list)
+#### Up next
+1. Expand Supabase test coverage (API keys, categories, factories, edge cases)
 2. Optional billing stubs
    - `GET /api/v1/billing/summary`
    - `GET /api/v1/billing/portal`
-3. Local verification
-   - Run `npm run smoke:all` and `npm run test:supabase`
-4. CI re-introduction (optional, later)
-   - Minimal: start server, run `smoke:supabase` and Supabase Jest using exact `.env` names
+3. Performance smoke for tokens endpoints
+4. CI re-introduction (later)
+   - Minimal: start server, run status + Supabase tests using project `.env`
 
 ### **Migration Strategy**
 - **Dual-write phase**: Write to both MongoDB and Supabase

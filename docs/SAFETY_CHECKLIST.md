@@ -42,7 +42,7 @@ This document provides a comprehensive safety checklist for creating, reviewing,
 
 ### For Reviewers
 - [ ] **Run tests locally**: Verify tests pass in reviewer's environment
-- [ ] **Test health endpoints**: `/health` and `/status/database` work correctly
+- [ ] **Test health endpoints**: `/status/postgres` and `/status/database` work correctly
 - [ ] **Review migration strategy**: Changes align with overall migration plan
 - [ ] **Check performance**: No obvious performance regressions
 - [ ] **Validate rollback**: Rollback instructions are clear and tested
@@ -64,7 +64,7 @@ This document provides a comprehensive safety checklist for creating, reviewing,
 - [ ] **Rollback plan tested**: Rollback procedure verified to work
 
 ### During Deployment
-- [ ] **Health checks monitored**: Watch `/health` and `/status/database` during deploy
+- [ ] **Health checks monitored**: Watch `/status/postgres` and `/status/database` during deploy
 - [ ] **Error rates monitored**: No increase in application errors
 - [ ] **Response times monitored**: No significant latency increase
 - [ ] **Database connections stable**: Connection pools remain healthy
@@ -79,7 +79,7 @@ This document provides a comprehensive safety checklist for creating, reviewing,
 
 ### If Something Goes Wrong
 1. **Immediate Actions**:
-   - Check health endpoints: `curl localhost:4000/health`
+   - Check health endpoints: `curl localhost:4000/status/postgres` and `/status/database`
    - Check application logs for errors
    - Verify database connections are stable
 
@@ -117,7 +117,7 @@ npm run test:performance
 
 ### Testing Different Migration States
 ```bash
-# Test MongoDB-only mode (current state)
+# Historical: MongoDB-only mode (no longer active)
 DB_READS=mongo DB_WRITES=mongo npm run test:dal
 
 # Test dual-write mode (when available)
@@ -134,7 +134,7 @@ npm run dev
 
 # In another terminal:
 # Test health endpoints
-curl http://localhost:4000/health | jq .
+curl http://localhost:4000/status/postgres | jq .
 curl http://localhost:4000/status/database | jq .
 
 # Test API functionality (with proper auth)
@@ -145,8 +145,8 @@ curl http://localhost:4000/status/database | jq .
 
 ### PR #1: DAL Foundation
 - ✅ **No controller changes**: Only infrastructure and interfaces
-- ✅ **MongoDB behavior identical**: All operations work exactly as before
-- ✅ **Health endpoints enhanced**: Show DAL status alongside MongoDB status
+- ✅ **Supabase behavior validated**: Tokens/API keys/memberships work as expected
+- ✅ **Health endpoints enhanced**: `/status/*` reflect DAL and Prisma status
 - ✅ **Comprehensive testing**: DAL adapters thoroughly tested
 
 ### PR #2: Controller Migration  

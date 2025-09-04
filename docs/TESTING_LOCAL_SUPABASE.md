@@ -47,6 +47,12 @@ npm start
 ```
 Server: http://localhost:4000
 
+## Local verification (one‑shot)
+Runs status checks, Supabase tests, and smoke tests. Requires `API_KEY`, `TENANT_ID`, `PROJECT_ID` in env for full smoke.
+```
+npm run local:verify
+```
+
 ## Smoke test (tokens via API key)
 ```
 # Requires API_KEY, TENANT_ID, PROJECT_ID in env

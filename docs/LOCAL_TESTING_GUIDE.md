@@ -276,7 +276,7 @@ sleep 10
 echo "Testing response times..."
 
 for i in {1..10}; do
-  TIME=$(curl -w "%{time_total}" -s -o /dev/null http://localhost:4000/health)
+  TIME=$(curl -w "%{time_total}" -s -o /dev/null http://localhost:4000/status/postgres)
   echo "Request $i: ${TIME}s"
 done
 
@@ -293,14 +293,10 @@ echo "✅ Performance test completed"
 
 ### Common Issues & Solutions
 
-#### "MongoDB connection error"
+#### "Database connection error"
 ```bash
-# Check MongoDB status
-systemctl status mongod   # Linux
-brew services list | grep mongo   # Mac
-
-# Or use Docker
-docker run --name mongo-test -p 27017:27017 -d mongo:7
+# Check Prisma/Supabase status
+curl -s http://localhost:4000/status/postgres | jq .
 ```
 
 #### "DAL initialization error"
@@ -308,9 +304,9 @@ docker run --name mongo-test -p 27017:27017 -d mongo:7
 # Check environment variables
 echo $DB_READS $DB_WRITES
 
-# Reset to defaults
-export DB_READS=mongo
-export DB_WRITES=mongo
+# Reset to Supabase-only
+export DB_READS=supabase
+export DB_WRITES=supabase
 ```
 
 #### "Prisma client not generated"
@@ -356,12 +352,9 @@ npm run dev
 # 1. Stop server
 kill %1  # or Ctrl+C
 
-# 2. Reset test database
-mongo design-token-test --eval "db.dropDatabase()"
-
-# 3. Re-seed
-node scripts/seedUser.js
-node scripts/seedCategories.js
+# 2. Re-generate Prisma client and ensure schema is in sync
+npx prisma generate
+npx prisma db push
 ```
 
 ## Validation Checklist
@@ -397,4 +390,3 @@ npm run test:endpoints             # Integration tests (CI only)
 # Development commands
 npm run dev                        # Start development server
 npm run lint                       # Check code quality
-

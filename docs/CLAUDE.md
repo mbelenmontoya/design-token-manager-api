@@ -9,7 +9,7 @@ This document provides essential context for AI assistants working with the Desi
 
 **Purpose**: Multi-tenant RESTful API for managing design tokens with enterprise-grade features.
 
-**Current State**: Express + MongoDB, planned migration to PostgreSQL + Prisma  
+**Current State**: Supabase/PostgreSQL via Prisma behind a DAL. Legacy Mongo/Mongoose notes below are historical.  
 **Architecture**: Multi-tenant SaaS (Tenant → Project → Tokens)
 
 ## Quick Start Commands
@@ -17,7 +17,7 @@ This document provides essential context for AI assistants working with the Desi
 ```bash
 # Setup (first time)
 cp .env.example .env
-# Edit .env with your MongoDB credentials
+# Edit .env with your Supabase credentials (see TESTING_LOCAL_SUPABASE.md)
 npm install
 node scripts/seedUser.js
 
@@ -36,17 +36,15 @@ npm start                      # Production server
 ```
 src/
 ├── config/
-│   ├── db.js                 # MongoDB connection
-│   ├── prisma.js             # Prisma client configuration
+│   ├── prisma.js             # Prisma client configuration (active)
 │   ├── supabase.js           # Supabase client configuration
 │   └── versioning.js         # API versioning config
 ├── dal/                      # Database Abstraction Layer
 │   ├── interfaces/
 │   │   └── DatabaseAdapter.js # DAL interface contract
 │   ├── adapters/
-│   │   ├── MongoAdapter.js   # MongoDB/Mongoose adapter
-│   │   ├── SupabaseAdapter.js # Supabase/Prisma adapter (stub)
-│   │   └── DualWriteAdapter.js # Dual-write adapter (stub)
+│   │   ├── SupabaseAdapter.js # Supabase/Prisma adapter (active)
+│   │   └── (Legacy adapters removed)
 │   ├── DatabaseFactory.js   # Adapter factory
 │   └── DatabaseService.js   # Main DAL service
 ├── controllers/              # Business logic
@@ -102,7 +100,7 @@ prisma/                   # Prisma schema and migrations
 
 ## Database Abstraction Layer (DAL)
 
-**Status**: 🔄 Active Migration - MongoDB to PostgreSQL (Supabase)
+**Status**: ✅ Supabase-only runtime (migration complete; Mongo notes historical)
 
 The DAL provides a unified interface for database operations, enabling seamless migration between database systems without changing application logic.
 
@@ -114,13 +112,11 @@ The DAL provides a unified interface for database operations, enabling seamless 
 - Handles initialization and connection management
 
 **DatabaseFactory** (`src/dal/DatabaseFactory.js`): Creates appropriate adapters based on environment
-- `DB_READS`: Controls read operations (mongo | supabase)
-- `DB_WRITES`: Controls write operations (mongo | supabase | dual)
+- `DB_READS`: supabase
+- `DB_WRITES`: supabase
 
 **Adapters** (`src/dal/adapters/`):
-- **MongoAdapter**: Wraps existing Mongoose models ✅ *Implemented*
-- **SupabaseAdapter**: Prisma/PostgreSQL implementation 📝 *Coming in PR #5*
-- **DualWriteAdapter**: Writes to both databases 📝 *Coming in PR #6*
+- **SupabaseAdapter**: Prisma/PostgreSQL implementation (active)
 
 ### Configuration
 

@@ -1074,7 +1074,7 @@ EXPOSE 4000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:4000/health || exit 1
+  CMD curl -f http://localhost:4000/status/postgres || exit 1
 
 # Start application
 CMD ["node", "src/index.js"]
@@ -1129,6 +1129,7 @@ volumes:
 #### Health Check Endpoints
 ```javascript
 // Health check implementation
+// Historical example; current endpoints are /status/postgres and /status/database
 app.get('/health', async (req, res) => {
   const checks = {
     uptime: process.uptime(),
