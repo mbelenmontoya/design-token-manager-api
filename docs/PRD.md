@@ -1,5 +1,7 @@
 # Design Token Manager API - Product Requirements Document (PRD)
 
+Note: The live implementation runs on Supabase/PostgreSQL via Prisma behind a DAL. Legacy references to MongoDB/Mongoose remain for historical context and will be trimmed as documentation is refreshed. See docs/ROADMAP.md and docs/TESTING_LOCAL_SUPABASE.md.
+
 ## Executive Summary
 
 The **Design Token Manager API** is a RESTful backend service that provides comprehensive design token management capabilities for modern design systems. Built with Node.js and Express, it offers a robust, scalable, and secure platform for managing design tokens across multi-tenant organizations with role-based access control, API key authentication, and comprehensive team collaboration features.

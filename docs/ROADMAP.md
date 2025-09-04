@@ -1,6 +1,6 @@
 # Design Token Manager API - Roadmap
 
-> **Current State**: API runs with Express; initial MongoDB testing exists. **Decision**: Migrate DB to Supabase (managed PostgreSQL) + Prisma with DAL and dual-write cutover. Health endpoint exists; auditing harness & Stage-1 tests are running in CI.
+> **Current State (Today)**: API is running on Supabase/PostgreSQL via Prisma behind a Database Abstraction Layer (DAL). Core controllers (tokens/import, categories, API keys, invitations, memberships, releases) use DAL. Mongo models and wiring were removed. CI is temporarily disabled (local-first workflow). New read endpoints added for dashboard integration.
 
 > **Pain-Point Goals**: Strong multi-tenant model and RBAC for enterprise. Versioned tokens + immutable artifacts (fast CDN). Easy exports and eventually GitHub PR push. Clear observability (health, metrics, audit).
 
@@ -8,33 +8,34 @@
 
 ## 5-Stage Development Plan
 
-### **Stage 1 — Foundations & Migration (IN PROGRESS)**
+### **Stage 1 — Foundations & Migration (Cutover in progress)**
 
 #### **Objectives**: Move to PostgreSQL safely, keep behavior intact, don't break deploy
 
 #### **Deliverables**:
 - **Supabase Project Setup**: New Supabase project with PostgreSQL database
 - **Prisma Schema**: Tenants, Projects, Users, Memberships, Tokens (+Version history), ApiKeys, Invitations, (Usage counters optional)
-- **DAL Layer**: Interfaces + two adapters (mongo, supabase), selected via env: `DB_READS=mongo|supabase`, `DB_WRITES=mongo|dual|supabase`
-- **Controllers**: Refactor to call DAL only; responses unchanged
-- **Backfill & Compare Scripts**: Migrate historical data, diff reports, retry tool
-- **Health/Status**: `/health` includes `supabase.connected`; `/status` returns storage modes (reads/writes)
-- **CI**: Schema validate/generate; optional dry compare on seed
+- **DAL Layer**: Interface + adapters (Supabase active; Mongo removed). Env now fixed to Supabase only.
+- **Controllers**: Refactored to call DAL only; responses unchanged (prefer `id` over `_id`).
+- **Backfill & Compare Scripts**: (deferred) Not required for greenfield Supabase.
+- **Health/Status**: `/status/postgres` (Prisma connectivity) and `/status/database` (DAL config + health).
+- **CI**: Temporarily disabled per project decision; local testing used.
 
 #### **Acceptance Criteria**:
-- API passes Stage-1 tests with dual-write
-- `/health` shows Supabase connection OK when reachable
-- No route/contract changes
-- Deploy system not broken
+- API passes local smoke + Supabase Jest tests
+- Status endpoints available (`/status/postgres`, `/status/database`)
+- No breaking changes to API contracts (stable responses; `id` normalization)
+- Deploy system healthy (Render deploy uses `@prisma/client` + postinstall generate)
 
-#### **Current Status**: 🔄 **IN PROGRESS**
-- ✅ Supabase project setup (COMPLETED - credentials available)
-- ✅ Prisma setup and schema definition (tables provisioned)
-- ✅ DAL layer foundation (Mongo + Supabase adapters implemented)
-- 🔄 Controller migration (tokens/import + middleware done)
-- ❌ Dual-write system
-- ✅ Health endpoints (+ Postgres check)
-- 🔄 Tests: smoke script for Supabase; Jest update pending
+#### **Current Status**: ✅ Core migration landed; cleanup in progress
+- ✅ Supabase project setup
+- ✅ Prisma schema and generated client
+- ✅ DAL foundation (Supabase active)
+- ✅ Controllers migrated (tokens/import/categories/api-keys/invitations/memberships/releases)
+- ✅ Mongo wiring/models removed
+- ✅ Status endpoints
+- ✅ Local smoke + Supabase Jest tests
+- 🔄 Swagger/OpenAPI refresh (next)
 
 ---
 
@@ -131,31 +132,28 @@
 
 ## Current Technical Priorities
 
-### **Stage 1 Immediate Actions**
+### **Near-term Tasks (Next Sprint)**
 
-> **📋 Detailed Migration Plan**: See [MIGRATION_PLAN.md](MIGRATION_PLAN.md) for complete PR-based implementation strategy
+> **📋 Detailed Migration Plan**: See [docs/MIGRATION_PLAN.md](MIGRATION_PLAN.md) for the PR-based strategy
 
-#### **User Tasks (Database Setup)**:
-1. ✅ **Create Supabase project** and obtain connection credentials
-2. **Configure Supabase database** settings and security rules  
-3. ✅ **Update .env file** with Supabase connection details
+#### Done today
+1. Controllers migrated to DAL (tokens/import/categories/api-keys/invitations/memberships/releases)
+2. Removed Mongo wiring and models; Supabase-only factory
+3. New endpoints: `GET /api/v1/users/me/memberships`, `GET /api/v1/api-keys`
+4. Render deploy fix (`@prisma/client` + postinstall generate)
+5. Local smoke and Supabase Jest tests green
 
-#### **Development Tasks (Code)**:
-1. ✅ **Install and configure Prisma** with Supabase connection
-2. ✅ **Define Prisma schema** matching current MongoDB models
-3. 🔄 **Implement DAL layer** with MongoDB and Supabase adapters (PR-based approach)
-4. **Create dual-write system** with environment toggles
-5. **Build backfill and compare scripts** for data migration
-6. **Update health endpoints** to include Supabase connection status
-7. **Ensure CI pipeline** validates schema changes
-
-#### **Current Focus: PR #2 - Controller Migration (Tokens)**
-- ✅ Tokens controller migrated to DAL
-- ✅ Import controller migrated to DAL
-- ✅ Middleware (tenantContext, verifyApiKey) migrated
-- ✅ Supabase adapter implemented early to enable cutover
-- 🔄 Migrate API keys, categories, invitations, memberships, releases
-- 📝 Update docs and smoke testing (in progress)
+#### Next (tomorrow)
+1. Swagger/OpenAPI refresh
+   - Normalize to `id` (drop `_id` in docs)
+   - Document new endpoints (my memberships, API keys list)
+2. Optional billing stubs
+   - `GET /api/v1/billing/summary`
+   - `GET /api/v1/billing/portal`
+3. Local verification
+   - Run `npm run smoke:all` and `npm run test:supabase`
+4. CI re-introduction (optional, later)
+   - Minimal: start server, run `smoke:supabase` and Supabase Jest using exact `.env` names
 
 ### **Migration Strategy**
 - **Dual-write phase**: Write to both MongoDB and Supabase
@@ -166,5 +164,5 @@
 
 ---
 
-*Last Updated: December 2024*  
-*Next Review: After Stage 1 completion*
+*Last Updated: September 2025*  
+*Next Review: After Swagger/OpenAPI refresh*

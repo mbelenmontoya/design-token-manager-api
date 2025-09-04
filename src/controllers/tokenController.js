@@ -66,7 +66,9 @@ export const createToken = async (req, res, next) => {
 export const updateToken = async (req, res, next) => {
   try {
     const token = await databaseService.findTokenById(req.params.id);
-    if (!token || token.tenant.toString() !== req.tenantId || token.project.toString() !== req.projectId) {
+    const tTenant = token?.tenantId ?? token?.tenant;
+    const tProject = token?.projectId ?? token?.project;
+    if (!token || String(tTenant) !== String(req.tenantId) || String(tProject) !== String(req.projectId)) {
       return res.status(404).json({ message: 'Token not found' });
     }
 
@@ -83,7 +85,9 @@ export const updateToken = async (req, res, next) => {
 export const deleteToken = async (req, res, next) => {
   try {
     const token = await databaseService.findTokenById(req.params.id);
-    if (!token || token.tenant.toString() !== req.tenantId || token.project.toString() !== req.projectId) {
+    const tTenant = token?.tenantId ?? token?.tenant;
+    const tProject = token?.projectId ?? token?.project;
+    if (!token || String(tTenant) !== String(req.tenantId) || String(tProject) !== String(req.projectId)) {
       return res.status(404).json({ message: 'Token not found' });
     }
     await databaseService.deleteToken(req.params.id);

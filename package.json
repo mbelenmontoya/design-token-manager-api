@@ -21,7 +21,12 @@
     "prisma:studio": "npx prisma studio",
     "bootstrap:supabase": "node scripts/bootstrapSupabase.js",
     "smoke:supabase": "node scripts/smokeSupabase.js",
-    "test:supabase": "node --experimental-vm-modules node_modules/.bin/jest --config tests/supabase/jest.supabase.config.js --runInBand"
+    "smoke:status": "node scripts/checkStatus.js",
+    "smoke:memberships": "node scripts/smokeMemberships.js",
+    "smoke:api-keys": "node scripts/smokeApiKeysList.js",
+    "smoke:all": "node scripts/smokeAll.js",
+    "test:supabase": "node --experimental-vm-modules node_modules/.bin/jest --config tests/supabase/jest.supabase.config.js --runInBand",
+    "local:verify": "./scripts/local-verify.sh"
   },
   "jest": {
     "testEnvironment": "node"

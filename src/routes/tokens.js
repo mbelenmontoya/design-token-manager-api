@@ -70,6 +70,8 @@ router
  *       - bearerAuth: []
  *     description: "Requires `read:tokens` scope and `Authorization: Bearer <apiKey>`"
  *     parameters:
+ *       - $ref: '#/components/parameters/XTenantId'
+ *       - $ref: '#/components/parameters/XProjectId'
  *       - in: query
  *         name: page
  *         schema:
@@ -107,7 +109,7 @@ router
  *                     $ref: '#/components/schemas/Token'
  */
   .get(verifyJWT, tenantContext, getTokens)
-/**
+ /**
  * @swagger
  * /api/v1/tokens:
  *   post:
@@ -117,6 +119,9 @@ router
  *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     description: "Requires `write:tokens` scope and `Authorization: Bearer <apiKey>`"
+ *     parameters:
+ *       - $ref: '#/components/parameters/XTenantId'
+ *       - $ref: '#/components/parameters/XProjectId'
  *     requestBody:
  *       required: true
  *       content:
@@ -154,7 +159,7 @@ router
 // ‣ DELETE /api/v1/tokens/:id
 router
   .route('/:id')
-  /**
+ /**
  * @swagger
  * /api/v1/tokens/{id}:
  *   put:
@@ -171,6 +176,8 @@ router
  *         schema:
  *           type: string
  *         description: The token ID
+ *       - $ref: '#/components/parameters/XTenantId'
+ *       - $ref: '#/components/parameters/XProjectId'
  *     requestBody:
  *       required: true
  *       content:
@@ -188,7 +195,7 @@ router
  *         description: Token not found
  */
   .put(verifyJWT, tenantContext, requireRole(['admin','editor']), updateToken)
-  /**
+ /**
  * @swagger
  * /api/v1/tokens/{id}:
  *   delete:
@@ -205,6 +212,8 @@ router
  *         schema:
  *           type: string
  *         description: The token ID
+ *       - $ref: '#/components/parameters/XTenantId'
+ *       - $ref: '#/components/parameters/XProjectId'
  *     responses:
  *       200:
  *         description: Token removed message
@@ -225,6 +234,11 @@ router
  *   post:
  *     summary: Bulk import or update tokens
  *     tags: [Tokens]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/XTenantId'
+ *       - $ref: '#/components/parameters/XProjectId'
  *     requestBody:
  *       required: true
  *       content:

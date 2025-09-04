@@ -29,12 +29,15 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/api-keys:
+ * /api/v1/api-keys:
  *   post:
  *     summary: Create a new API key
  *     tags: [APIKeys]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/XTenantId'
+ *       - $ref: '#/components/parameters/XProjectId'
  *     requestBody:
  *       required: true
  *       content:
@@ -50,11 +53,38 @@ const router = express.Router();
  *               $ref: '#/components/schemas/ApiKeyWithValue'
  */
 router.post('/', verifyJWT, tenantContext, requireRole(['admin']), createApiKey);
+
+/**
+ * @swagger
+ * /api/v1/api-keys:
+ *   get:
+ *     summary: List API keys for the current project
+ *     tags: [APIKeys]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/XTenantId'
+ *       - $ref: '#/components/parameters/XProjectId'
+ *     responses:
+ *       200:
+ *         description: API keys
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ApiKey'
+ *                 total:
+ *                   type: integer
+ */
 router.get('/', verifyJWT, tenantContext, requireRole(['admin']), listApiKeys);
 
 /**
  * @swagger
- * /api/api-keys/{id}/rotate:
+ * /api/v1/api-keys/{id}/rotate:
  *   post:
  *     summary: Rotate an existing API key
  *     tags: [APIKeys]
@@ -67,6 +97,8 @@ router.get('/', verifyJWT, tenantContext, requireRole(['admin']), listApiKeys);
  *         schema:
  *           type: string
  *         description: API key ID
+ *       - $ref: '#/components/parameters/XTenantId'
+ *       - $ref: '#/components/parameters/XProjectId'
  *     responses:
  *       200:
  *         description: New raw key value
@@ -87,7 +119,7 @@ router.post(
 
 /**
  * @swagger
- * /api/api-keys/{id}:
+ * /api/v1/api-keys/{id}:
  *   delete:
  *     summary: Revoke an API key
  *     tags: [APIKeys]
@@ -100,6 +132,8 @@ router.post(
  *         schema:
  *           type: string
  *         description: API key ID
+ *       - $ref: '#/components/parameters/XTenantId'
+ *       - $ref: '#/components/parameters/XProjectId'
  *     responses:
  *       200:
  *         description: Confirmation message

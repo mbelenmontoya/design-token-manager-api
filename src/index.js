@@ -44,7 +44,7 @@ const swaggerSpecV1 = swaggerJSDoc({
     info: {
       title: 'Design Token Manager API',
       version: '1.0.0',
-      description: 'CRUD for design tokens, with JWT auth',
+      description: 'Multi-tenant design token API with JWT and API key auth',
     },
     servers: [
       { url: 'http://localhost:4000/api/v1', description: 'v1' },
@@ -64,13 +64,29 @@ const swaggerSpecV1 = swaggerJSDoc({
           description: 'Project API key'
         }
       },
+      parameters: {
+        XTenantId: {
+          name: 'x-tenant-id',
+          in: 'header',
+          required: true,
+          schema: { type: 'string' },
+          description: 'Tenant ID (required for scoped operations)'
+        },
+        XProjectId: {
+          name: 'x-project-id',
+          in: 'header',
+          required: true,
+          schema: { type: 'string' },
+          description: 'Project ID (required for scoped operations)'
+        }
+      },
       schemas: {
         Token: {
           type: 'object',
           properties: {
-            _id: { type: 'string' },
-            tenant: { type: 'string' },
-            project: { type: 'string' },
+            id: { type: 'string' },
+            tenantId: { type: 'string' },
+            projectId: { type: 'string' },
             name: { type: 'string' },
             value: { type: 'string' },
             category: { type: 'string' },
@@ -95,9 +111,9 @@ const swaggerSpecV1 = swaggerJSDoc({
         ApiKey: {
           type: 'object',
           properties: {
-            _id: { type: 'string' },
-            tenant: { type: 'string' },
-            project: { type: 'string' },
+            id: { type: 'string' },
+            tenantId: { type: 'string' },
+            projectId: { type: 'string' },
             scopes: {
               type: 'array',
               items: {
@@ -105,7 +121,7 @@ const swaggerSpecV1 = swaggerJSDoc({
                 enum: ['read:tokens', 'write:tokens']
               }
             },
-            createdBy: { type: 'string' },
+            createdById: { type: 'string' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },
@@ -136,6 +152,27 @@ const swaggerSpecV1 = swaggerJSDoc({
             apiKey: { type: 'string' },
           },
         },
+        MembershipItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            role: { type: 'string', enum: ['admin', 'editor', 'viewer'] },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                username: { type: 'string' }
+              }
+            },
+            tenant: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' }
+              }
+            }
+          }
+        }
       },
     },
   },

@@ -25,13 +25,9 @@
 - **Server Startup**: Enhanced connection verification and retry logic
 - **Error Handling**: Improved logging and graceful failure handling
 
-## ⚠️ Current Blocker
+## Status Note
 
-**Root Cause**: None — Supabase flow working
-- Current: `mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>`
-- Needed: Real MongoDB connection string with valid credentials
-
-**Impact**: All database operations timeout, tests fail, cannot create PR
+MongoDB-specific blockers are no longer applicable. The system runs against Supabase/PostgreSQL via Prisma. Historical notes retained below for reference.
 
 ## 📋 Next Session Action Plan
 
