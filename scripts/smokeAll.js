@@ -63,9 +63,15 @@ async function main() {
   const jwt = await login();
   await memberships(jwt);
   await apiKeys(jwt);
+  // Billing (admin JWT + tenant header)
+  if (TENANT_ID) {
+    const sum = await request('GET', '/api/v1/billing/summary', { headers: { Authorization: `Bearer ${jwt}`, 'x-tenant-id': TENANT_ID } });
+    if (sum.status !== 200) throw new Error('billing summary failed: ' + JSON.stringify(sum.body));
+    const por = await request('GET', '/api/v1/billing/portal', { headers: { Authorization: `Bearer ${jwt}`, 'x-tenant-id': TENANT_ID } });
+    if (por.status !== 200) throw new Error('billing portal failed: ' + JSON.stringify(por.body));
+  }
   await tokens();
   console.log('All smoke checks passed ✅');
 }
 
 main().catch((e) => { console.error('❌ Smoke all error', e); process.exit(1); });
-

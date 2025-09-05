@@ -15,6 +15,7 @@ import statusRoutes from './routes/status.js';
 import releaseRoutes from './routes/releases.js';
 import apiKeyRoutes from './routes/apiKeys.js';
 import userRoutes from './routes/users.js';
+import billingRoutes from './routes/billing.js';
 
 // Database Abstraction Layer
 import databaseService from './dal/DatabaseService.js';
@@ -81,6 +82,34 @@ const swaggerSpecV1 = swaggerJSDoc({
         }
       },
       schemas: {
+        BillingSummary: {
+          type: 'object',
+          properties: {
+            provider: { type: 'string', enum: ['stripe', 'mercadopago'] },
+            tenantId: { type: 'string' },
+            plan: { type: 'string' },
+            status: { type: 'string' },
+            currency: { type: 'string' },
+            amount: { type: 'number' },
+            interval: { type: 'string', enum: ['month', 'year'] },
+            currentPeriodEnd: { type: 'string', format: 'date-time' },
+            seats: {
+              type: 'object',
+              properties: {
+                used: { type: 'integer' },
+                limit: { type: 'integer' }
+              }
+            },
+            usage: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        BillingPortalResponse: {
+          type: 'object',
+          properties: { url: { type: 'string', format: 'uri' } }
+        },
         Token: {
           type: 'object',
           properties: {
@@ -196,6 +225,7 @@ app.use('/api/v1/api-keys', apiKeyRoutes);
 // Backwards compatibility for API key routes
 app.use('/api/api-keys', apiKeyRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/billing', billingRoutes);
 app.use('/api-docs/v1', swaggerUi.serve, swaggerUi.setup(swaggerSpecV1));
 
 
