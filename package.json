@@ -24,6 +24,7 @@
     "smoke:status": "node scripts/checkStatus.js",
     "smoke:memberships": "node scripts/smokeMemberships.js",
     "smoke:api-keys": "node scripts/smokeApiKeysList.js",
+    "smoke:billing": "node scripts/smokeBilling.js",
     "smoke:all": "node scripts/smokeAll.js",
     "test:supabase": "node --experimental-vm-modules node_modules/.bin/jest --config tests/supabase/jest.supabase.config.js --runInBand",
     "local:verify": "./scripts/local-verify.sh"
