@@ -47,20 +47,15 @@ export async function deleteMembership(req, res, next) {
 export async function getMyMemberships(req, res, next) {
   try {
     const list = await databaseService.findMembershipsByUser(req.user.id);
-    const items = (list || []).map((m) => ({
-      id: m._id?.toString?.() || m.id,
-      role: m.role,
-      user: {
-        id: m.user?._id?.toString?.() || m.user?.id || m.userId,
-        username: m.user?.username,
-      },
-      tenant: {
-        id: m.tenant?._id?.toString?.() || m.tenant?.id || m.tenantId,
-        name: m.tenant?.name,
-      },
-      createdAt: m.createdAt,
-      updatedAt: m.updatedAt,
-    }));
+    const items = (list || []).map((m) => {
+      const role = m.role === 'admin' ? 'org_admin' : m.role;
+      const tenantId = m.tenant?._id?.toString?.() || m.tenant?.id || m.tenantId;
+      const tenant = { id: tenantId, name: m.tenant?.name };
+      const projects = Array.isArray(m.tenant?.projects)
+        ? m.tenant.projects.map(p => ({ id: p.id || p._id?.toString?.(), name: p.name }))
+        : undefined;
+      return { tenant, role, ...(projects ? { projects } : {}) };
+    });
     res.json({ items, total: items.length });
   } catch (err) {
     next(err);

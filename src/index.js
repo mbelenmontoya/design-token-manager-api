@@ -16,6 +16,8 @@ import releaseRoutes from './routes/releases.js';
 import apiKeyRoutes from './routes/apiKeys.js';
 import userRoutes from './routes/users.js';
 import billingRoutes from './routes/billing.js';
+import webhooksRoutes from './routes/webhooks.js';
+import projectsRoutes from './routes/projects.js';
 
 // Database Abstraction Layer
 import databaseService from './dal/DatabaseService.js';
@@ -26,8 +28,10 @@ const app = express();
 
 // 1) CORS: allow your React app origin
 app.use(cors({
-  origin: process.env.CLIENT_URL, // your Vite dev server
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Authorization','Content-Type','x-tenant-id','x-project-id'],
 }));
 
 // 2) Logging: show incoming requests in your console
@@ -226,6 +230,9 @@ app.use('/api/v1/api-keys', apiKeyRoutes);
 app.use('/api/api-keys', apiKeyRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/billing', billingRoutes);
+// Webhooks (no auth)
+app.use('/webhooks', webhooksRoutes);
+app.use('/api/v1', projectsRoutes);
 app.use('/api-docs/v1', swaggerUi.serve, swaggerUi.setup(swaggerSpecV1));
 
 

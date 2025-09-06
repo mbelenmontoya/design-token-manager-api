@@ -34,6 +34,14 @@ model Tenant {
   name        String   @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  // Billing
+  billingProvider       String?   // 'mercadopago' | 'stripe'
+  billingCustomerId     String?
+  billingSubscriptionId String?
+  billingPlan           String?
+  billingStatus         String?
+  billingPeriodEnd      DateTime?
+  currency              String?
 
   // Relations
   projects     Project[]
