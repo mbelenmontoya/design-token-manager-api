@@ -231,6 +231,10 @@ export class DatabaseAdapter {
     throw new Error('findTokenReleases method must be implemented');
   }
   // Project assignments
+  async findProjectAssignmentsByProject(projectId) {
+    throw new Error('findProjectAssignmentsByProject must be implemented');
+  }
+  // Project assignments
   async findProjectAssignmentsByUser(userId) {
     throw new Error('findProjectAssignmentsByUser must be implemented');
   }

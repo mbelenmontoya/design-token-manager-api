@@ -316,6 +316,9 @@ export class SupabaseAdapter extends DatabaseAdapter {
 
 
   // Project assignments
+  async findProjectAssignmentsByProject(projectId) {
+    return prisma.projectAssignment.findMany({ where: { projectId }, include: { user: true } });
+  }
   async findProjectAssignmentsByUser(userId) {
     return prisma.projectAssignment.findMany({ where: { userId }, include: { project: true } });
   }

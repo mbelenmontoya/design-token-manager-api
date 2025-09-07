@@ -290,6 +290,12 @@ class DatabaseService {
   async deleteProjectAssignment(userId, projectId) {
     return this.writeAdapter.deleteProjectAssignment(userId, projectId);
   }
+  async findProjectAssignmentsByProject(projectId) {
+    if (this.readAdapter.findProjectAssignmentsByProject) {
+      return this.readAdapter.findProjectAssignmentsByProject(projectId);
+    }
+    return [];
+  }
 }
 
 // Export singleton instance
