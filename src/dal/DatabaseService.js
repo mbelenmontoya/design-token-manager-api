@@ -273,6 +273,23 @@ class DatabaseService {
   async deleteTokenRelease(id) {
     return this.writeAdapter.deleteTokenRelease(id);
   }
+
+  // Project assignments
+  async findProjectAssignmentsByUser(userId) {
+    return this.readAdapter.findProjectAssignmentsByUser(userId);
+  }
+  async findAssignedProjectsByUser(userId, tenantId) {
+    return this.readAdapter.findAssignedProjectsByUser(userId, tenantId);
+  }
+  async hasProjectAssignment(userId, projectId) {
+    return this.readAdapter.hasProjectAssignment(userId, projectId);
+  }
+  async createProjectAssignment(data) {
+    return this.writeAdapter.createProjectAssignment(data);
+  }
+  async deleteProjectAssignment(userId, projectId) {
+    return this.writeAdapter.deleteProjectAssignment(userId, projectId);
+  }
 }
 
 // Export singleton instance

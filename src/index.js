@@ -18,6 +18,7 @@ import userRoutes from './routes/users.js';
 import billingRoutes from './routes/billing.js';
 import webhooksRoutes from './routes/webhooks.js';
 import projectsRoutes from './routes/projects.js';
+import assignmentsRoutes from './routes/assignments.js';
 
 // Database Abstraction Layer
 import databaseService from './dal/DatabaseService.js';
@@ -233,6 +234,7 @@ app.use('/api/v1/billing', billingRoutes);
 // Webhooks (no auth)
 app.use('/webhooks', webhooksRoutes);
 app.use('/api/v1', projectsRoutes);
+app.use('/api/v1', assignmentsRoutes);
 app.use('/api-docs/v1', swaggerUi.serve, swaggerUi.setup(swaggerSpecV1));
 
 

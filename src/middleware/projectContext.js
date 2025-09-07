@@ -25,6 +25,10 @@ export default async function projectContext(req, res, next) {
     if (!project || String(projectTenant) !== String(tenantId)) {
       return ERR.FORBIDDEN(res, 'Project not found in tenant');
     }
+    if (membership.role !== 'admin') {
+      const assigned = await databaseService.hasProjectAssignment(req.user.id, projectId);
+      if (!assigned) return ERR.FORBIDDEN(res, 'Project not assigned to user');
+    }
     req.projectId = projectId;
     next();
   } catch (err) {
