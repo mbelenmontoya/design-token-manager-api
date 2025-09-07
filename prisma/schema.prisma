@@ -24,6 +24,7 @@ model User {
   invitations       Invitation[]
   acceptedInvitations Invitation[] @relation("AcceptedInvitations")
   apiKeys           ApiKey[]
+  projectAssignments ProjectAssignment[]
 
   @@map("users")
 }
@@ -65,6 +66,7 @@ model Project {
   tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tokens    Token[]
   apiKeys   ApiKey[]
+  assignments ProjectAssignment[]
 
   // Unique constraint for tenant + name
   @@unique([tenantId, name])
@@ -179,6 +181,24 @@ model TokenRelease {
   // Unique constraint for version + theme + format
   @@unique([version, theme, format])
   @@map("token_releases")
+}
+
+
+// Project Assignments (User ↔ Project)
+model ProjectAssignment {
+  id         String   @id @default(cuid())
+  userId     String
+  projectId  String
+  role       MemberRole?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@map("project_assignments")
 }
 
 // Enums
