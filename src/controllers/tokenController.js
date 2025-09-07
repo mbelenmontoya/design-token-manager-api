@@ -22,7 +22,7 @@ export const getTokens = async (req, res) => {
   ]);
 
   const pages = Math.ceil(total / limit);
-  res.json({ tokens, total, page, limit, pages });
+  res.json({ items: tokens, total, pages });
 };
 
 // @desc    Create a new token
@@ -91,7 +91,7 @@ export const deleteToken = async (req, res, next) => {
       return res.status(404).json({ message: 'Token not found' });
     }
     await databaseService.deleteToken(req.params.id);
-    res.json({ message: 'Token removed' });
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

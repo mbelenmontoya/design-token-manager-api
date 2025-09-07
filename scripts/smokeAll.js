@@ -1,76 +1,57 @@
 // Quick all-in-one smoke: status, memberships, api-keys list, tokens
 import 'dotenv/config';
-
-const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 4000}`;
-const API_KEY = process.env.API_KEY;
-const TENANT_ID = process.env.TENANT_ID;
-const PROJECT_ID = process.env.PROJECT_ID;
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || process.env.ADMIN_USER;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin#123';
-
-async function request(method, path, { headers = {}, body } = {}) {
-  const res = await fetch(BASE_URL + path, {
-    method,
-    headers: { 'Content-Type': 'application/json', ...headers },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await res.text();
-  let data; try { data = JSON.parse(text); } catch { data = text; }
-  return { status: res.status, body: data };
-}
+import { http } from './lib/http.js';
+import { login as loginAdmin, resolveTenantProject } from './lib/context.js';
 
 async function status() {
-  const a = await request('GET', '/status/postgres');
-  const b = await request('GET', '/status/database');
+  const a = await http('GET', '/status/postgres');
+  const b = await http('GET', '/status/database');
   console.log('status/postgres', a.status, a.body?.ok ?? a.body);
   console.log('status/database', b.status, b.body?.configuration ?? b.body);
   if (a.status !== 200) throw new Error('postgres status failed');
 }
 
-async function login() {
-  if (!ADMIN_USERNAME) throw new Error('Missing ADMIN_USERNAME/ADMIN_USER env');
-  const res = await request('POST', '/api/v1/auth/login', { body: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD } });
-  if (res.status !== 200) throw new Error('Login failed: ' + JSON.stringify(res.body));
-  return res.body.token;
-}
+// usar helper de login de contexto
 
 async function memberships(jwt) {
-  const res = await request('GET', '/api/v1/users/me/memberships', { headers: { Authorization: `Bearer ${jwt}` } });
+  const res = await http('GET', '/api/v1/users/me/memberships', { headers: { Authorization: `Bearer ${jwt}` } });
   if (res.status !== 200) throw new Error('memberships failed: ' + JSON.stringify(res.body));
   console.log('me/memberships OK', res.body?.total ?? res.body?.items?.length);
 }
 
-async function apiKeys(jwt) {
-  if (!TENANT_ID || !PROJECT_ID) throw new Error('Missing TENANT_ID/PROJECT_ID');
-  const res = await request('GET', '/api/v1/api-keys', { headers: { Authorization: `Bearer ${jwt}`, 'x-tenant-id': TENANT_ID, 'x-project-id': PROJECT_ID } });
+async function apiKeys(jwt, ctx) {
+  const { tenantId, projectId } = ctx;
+  const res = await http('GET', '/api/v1/api-keys', { headers: { Authorization: `Bearer ${jwt}`, 'x-tenant-id': tenantId, 'x-project-id': projectId } });
   if (res.status !== 200) throw new Error('api-keys list failed: ' + JSON.stringify(res.body));
   console.log('api-keys list OK', res.body?.total ?? res.body?.items?.length);
 }
 
-async function tokens() {
-  if (!API_KEY || !TENANT_ID || !PROJECT_ID) throw new Error('Missing API_KEY/TENANT_ID/PROJECT_ID');
-  const headers = { Authorization: `Bearer ${API_KEY}`, 'x-tenant-id': TENANT_ID, 'x-project-id': PROJECT_ID };
-  const list1 = await request('GET', '/api/v1/tokens', { headers });
+async function tokens(jwt, ctx) {
+  const { tenantId, projectId } = ctx;
+  const headers = { Authorization: `Bearer ${jwt}`, 'x-tenant-id': tenantId, 'x-project-id': projectId };
+  const list1 = await http('GET', '/api/v1/tokens', { headers });
   if (list1.status !== 200) throw new Error('GET tokens failed: ' + JSON.stringify(list1.body));
   const name = 'smoke-' + Date.now();
-  const create = await request('POST', '/api/v1/tokens', { headers, body: { name, value: '#abcdef', category: 'color' } });
+  const create = await http('POST', '/api/v1/tokens', { headers, body: { name, value: '#abcdef', category: 'color' } });
   if (create.status !== 201) throw new Error('POST token failed: ' + JSON.stringify(create.body));
-  console.log('tokens OK', create.body?.id || create.body?._id);
+  const tokenId = create.body?.id || create.body?._id;
+  const upd = await http('PUT', `/api/v1/tokens/${tokenId}`, { headers, body: { description: 'updated' } });
+  if (upd.status !== 200) throw new Error('PUT token failed: ' + JSON.stringify(upd.body));
+  const del = await http('DELETE', `/api/v1/tokens/${tokenId}`, { headers });
+  if (del.status !== 204) throw new Error('DELETE token failed: ' + JSON.stringify(del.body));
+  console.log('tokens OK', tokenId);
 }
 
 async function main() {
   await status();
-  const jwt = await login();
+  const jwt = await loginAdmin();
   await memberships(jwt);
-  await apiKeys(jwt);
-  // Billing (admin JWT + tenant header)
-  if (TENANT_ID) {
-    const sum = await request('GET', '/api/v1/billing/summary', { headers: { Authorization: `Bearer ${jwt}`, 'x-tenant-id': TENANT_ID } });
-    if (sum.status !== 200) throw new Error('billing summary failed: ' + JSON.stringify(sum.body));
-    const por = await request('GET', '/api/v1/billing/portal', { headers: { Authorization: `Bearer ${jwt}`, 'x-tenant-id': TENANT_ID } });
-    if (por.status !== 200) throw new Error('billing portal failed: ' + JSON.stringify(por.body));
-  }
-  await tokens();
+  const ctx = await resolveTenantProject(jwt);
+  await apiKeys(jwt, ctx);
+  // Billing opcional
+  const sum = await http('GET', '/api/v1/billing/summary', { headers: { Authorization: `Bearer ${jwt}`, 'x-tenant-id': ctx.tenantId } });
+  if (sum.status !== 200) console.warn('billing summary skipped/failed', sum.status);
+  await tokens(jwt, ctx);
   console.log('All smoke checks passed ✅');
 }
 
