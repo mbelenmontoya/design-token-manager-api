@@ -34,7 +34,6 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import databaseService from '../dal/DatabaseService.js';
-import { isPlatformAdminUsername } from '../config/platform.js';
 
 const router = express.Router();
 
@@ -55,7 +54,7 @@ router.post('/login', async (req, res, next) => {
       // sign a token with username and platform flag
       const id = user.id || user._id?.toString?.();
       const username = user.username;
-      const platform = isPlatformAdminUsername(username);
+      const platform = !!user.platformAdmin;
       const token = jwt.sign(
         { id, username, platform },
         process.env.JWT_SECRET,

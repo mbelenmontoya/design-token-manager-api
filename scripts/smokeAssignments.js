@@ -20,6 +20,7 @@ async function main() {
   const userId = parseJwtUserId(jwt);
   if (!userId) throw new Error('No se pudo resolver userId');
 
+  console.log('creating assignment for', { userId, tenantId, projectId });
   let res = await http('POST', `/api/v1/tenants/${tenantId}/projects/${projectId}/assignments`, {
     headers: { Authorization: `Bearer ${jwt}`, 'x-tenant-id': tenantId },
     body: { userId },
@@ -28,6 +29,7 @@ async function main() {
     console.error('❌ create assignment', res.status, res.body);
     process.exit(1);
   }
+  console.log('create assignment status', res.status, res.body);
   // Listar
   res = await http('GET', `/api/v1/tenants/${tenantId}/projects/${projectId}/assignments`, {
     headers: { Authorization: `Bearer ${jwt}`, 'x-tenant-id': tenantId },
