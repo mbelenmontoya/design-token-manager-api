@@ -2,12 +2,22 @@ import 'dotenv/config';
 import { http } from './lib/http.js';
 import { login, resolveTenantProject } from './lib/context.js';
 
+function parseJwtUserId(token) {
+  try {
+    const [, payload] = token.split('.');
+    const json = Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+    const obj = JSON.parse(json);
+    return obj.id;
+  } catch (_) {
+    return null;
+  }
+}
+
 async function main() {
   const jwt = await login();
   const { tenantId, projectId } = await resolveTenantProject(jwt);
-  // Crear asignación (al propio admin, como smoke mínimo)
-  const me = await http('GET', '/api/v1/users/me/memberships', { headers: { Authorization: `Bearer ${jwt}` } });
-  const userId = me.body?.items?.[0]?.user?.id || null;
+  // Crear asignación (al propio usuario) tomando el id del JWT
+  const userId = parseJwtUserId(jwt);
   if (!userId) throw new Error('No se pudo resolver userId');
 
   let res = await http('POST', `/api/v1/tenants/${tenantId}/projects/${projectId}/assignments`, {
