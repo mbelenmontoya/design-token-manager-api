@@ -10,6 +10,12 @@ export default async function projectContext(req, res, next) {
     if (!projectId) return ERR.CONTEXT_REQUIRED(res, 'Project context required');
 
     // Validar membresía del usuario en el tenant
+    if (req.user?.platform) {
+      req.role = 'admin';
+      req.tenantId = tenantId;
+      req.projectId = projectId;
+      return next();
+    }
     const memberships = await databaseService.findMembershipsByUser(req.user.id);
     const membership = memberships.find((m) => {
       const mTenant = m.tenant?._id?.toString?.() || m.tenant?.id || m.tenant || m.tenantId;

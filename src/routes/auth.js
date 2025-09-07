@@ -34,6 +34,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import databaseService from '../dal/DatabaseService.js';
+import { isPlatformAdminUsername } from '../config/platform.js';
 
 const router = express.Router();
 
@@ -51,9 +52,12 @@ router.post('/login', async (req, res, next) => {
       if (!valid) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-      // sign a token
+      // sign a token with username and platform flag
+      const id = user.id || user._id?.toString?.();
+      const username = user.username;
+      const platform = isPlatformAdminUsername(username);
       const token = jwt.sign(
-        { id: user.id || user._id?.toString?.() },
+        { id, username, platform },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN }
       );
