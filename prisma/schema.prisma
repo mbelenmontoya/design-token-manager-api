@@ -34,6 +34,8 @@ model User {
 model Tenant {
   id          String   @id @default(cuid())
   name        String   @unique
+  description String?
+  industry    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   // Billing
@@ -141,7 +143,9 @@ model Invitation {
   email       String
   role        MemberRole
   tokenHash   String     @unique
-  inviterId   String
+  inviterId   String?    // Optional for tenant creation invitations
+  adminName   String?    // For tenant admin invitations
+  isTenantCreation Boolean @default(false) // Flag for tenant creation invitations
   expiresAt   DateTime
   acceptedAt  DateTime?
   acceptedById String?
@@ -150,7 +154,7 @@ model Invitation {
 
   // Relations
   tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  inviter    User   @relation(fields: [inviterId], references: [id])
+  inviter    User?  @relation(fields: [inviterId], references: [id])
   acceptedBy User?  @relation("AcceptedInvitations", fields: [acceptedById], references: [id])
 
   @@map("invitations")
