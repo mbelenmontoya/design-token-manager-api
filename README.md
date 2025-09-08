@@ -77,9 +77,12 @@ Interactive Swagger documentation available at: `http://localhost:4000/api-docs/
 
 ### Key Endpoints
 - Authentication: `POST /api/v1/auth/login`
+- Current User: `GET /api/v1/users/me`
+- Tenants (platform admin): `GET /api/v1/tenants`
 - Tokens: Full CRUD at `/api/v1/tokens`
 - API Keys: Management at `/api/v1/api-keys`
 - Team Management: `/api/v1/invitations`, `/api/v1/memberships`
+- Project Assignments (org_admin): `GET/POST/DELETE /api/v1/tenants/:tenantId/projects/:projectId/assignments`
 - Status: `/status/database`, `/status/postgres`
 
 ## Development
