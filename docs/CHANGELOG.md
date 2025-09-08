@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2025-09-08
+
+### Added - Dashboard Endpoints for Tenant Management
+- **Tenant creation with admin invitation flow**:
+  - `POST /api/v1/tenants` - create tenant with admin invitation (platform admin only)
+  - `POST /api/v1/invitations/validate` - validate invitation token (no auth required)  
+  - `POST /api/v1/invitations/accept` - accept invitation and create user (no auth required)
+- **Extended Tenant schema**: Added `description`, `industry` fields for company details
+- **Enhanced Invitation model**: Added `adminName`, `isTenantCreation`, optional `inviterId` for platform-generated invites
+- **JWT auto-generation**: Immediate login token provided on invitation acceptance
+- **Comprehensive Swagger documentation**: All new endpoints documented with examples and schemas
+
+### Changed
+- **Invitation security**: Tokens expire in 72h, single-use with SHA-256 hashing
+- **Role mapping**: Uses `admin` role (not `org_admin`) to match Prisma schema
+- **GET /api/v1/tenants**: Now returns additional fields (description, industry, createdAt)
+
+### Technical
+- Database migrations applied to Supabase
+- Password validation (minimum 8 characters)
+- Platform admin authentication required for tenant creation
+- Error handling for expired/invalid tokens, duplicate emails, and validation failures
+
 ## [0.3.2] - 2025-09-05
 
 ### Added

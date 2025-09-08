@@ -11,6 +11,7 @@ This document provides essential context for AI assistants working with the Desi
 
 **Current State**: Supabase/PostgreSQL via Prisma behind a DAL. Legacy Mongo/Mongoose notes below are historical.  
 **Architecture**: Multi-tenant SaaS (Tenant → Project → Tokens)
+**Latest**: v0.3.3 with dashboard endpoints for tenant creation and admin invitations (Sept 2025)
 
 ## Quick Start Commands
 
@@ -299,6 +300,65 @@ npm run test:endpoints -- --testNamePattern="tokens"
 - CORS configuration
 - Role-based access control
 - Tenant isolation (no cross-tenant data access)
+
+---
+
+## 📋 Current Development Status (September 2025)
+
+### ✅ Recently Completed (v0.3.3)
+
+**Dashboard Endpoints Implementation**:
+- `POST /api/v1/tenants` - Platform admin can create tenants with automatic admin invitations
+- `POST /api/v1/invitations/validate` - Validate invitation tokens (no auth required)
+- `POST /api/v1/invitations/accept` - Accept invitations and create user accounts (no auth required)
+
+**Database Schema Extensions**:
+- Extended `Tenant` with `description`, `industry` fields
+- Enhanced `Invitation` with `adminName`, `isTenantCreation`, optional `inviterId`
+- Applied migrations to Supabase/PostgreSQL
+
+**Security & Features**:
+- JWT auto-generation on invitation acceptance for immediate login
+- 72-hour token expiration with SHA-256 hashing
+- Comprehensive input validation and error handling
+- Complete Swagger documentation for all new endpoints
+
+### 🔄 Current Branch Status
+
+- **Active Branch**: `feature/dashboard-endpoints`
+- **PR Status**: #31 open and ready for merge
+- **Commit**: 7f4e0da with comprehensive implementation
+- **Testing**: All endpoints tested and working locally
+
+### 🚀 Next Development Priorities (in order)
+
+1. **Billing Integration (Mercado Pago)** - NEXT UP
+   - Payment processing for LATAM markets
+   - Subscription management and billing cycles
+   - Usage tracking and plan limits
+
+2. **Error Standardization**
+   - Unified error envelope across all controllers
+   - Consistent error codes and messaging
+
+3. **CI/CD Pipeline** (final priority)
+   - Automated testing and deployment
+   - Server startup and smoke tests
+
+### 🛠️ Development Workflow
+
+**For next session**:
+1. Merge PR #31 if approved
+2. `git checkout main && git pull`
+3. Create new feature branch: `git checkout -b feature/billing-mercadopago`
+4. Implement billing endpoints following same patterns
+5. Test thoroughly, commit, push, create PR
+
+**Key Files to Reference**:
+- `CHANGELOG.md` - Complete feature history and changes
+- `TESTING_LOCAL_SUPABASE.md` - Local development and testing guide
+- `ROADMAP.md` - Long-term project direction
+- This file (`CLAUDE.md`) - Development context and current status
 
 ---
 
