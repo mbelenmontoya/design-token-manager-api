@@ -51,7 +51,7 @@ const swaggerSpecV1 = swaggerJSDoc({
     info: {
       title: 'Design Token Manager API',
       version: '1.0.0',
-      description: 'Multi-tenant design token API with JWT and API key auth',
+      description: 'Multi-tenant design token API with JWT and API key auth. Includes platform admin, project assignments, and role-based access control.',
     },
     servers: [
       { url: 'http://localhost:4000/api/v1', description: 'v1' },
@@ -206,6 +206,48 @@ const swaggerSpecV1 = swaggerJSDoc({
                 name: { type: 'string' }
               }
             }
+          }
+        },
+        User: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            username: { type: 'string' }
+          }
+        },
+        Tenant: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            industry: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        ProjectAssignment: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            userId: { type: 'string' },
+            projectId: { type: 'string' },
+            role: { type: 'string', enum: ['editor', 'viewer'] },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                username: { type: 'string' }
+              }
+            },
+            createdAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        ProjectAssignmentInput: {
+          type: 'object',
+          required: ['userId'],
+          properties: {
+            userId: { type: 'string' },
+            role: { type: 'string', enum: ['editor', 'viewer'], default: 'viewer' }
           }
         }
       },

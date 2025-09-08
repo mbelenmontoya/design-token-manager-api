@@ -4,6 +4,24 @@ import { getMyMemberships } from '../controllers/membershipController.js';
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/v1/users/me:
+ *   get:
+ *     summary: Get current user information
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ */
 // GET /api/v1/users/me
 router.get('/me', verifyJWT, (req, res) => {
   res.json({ id: req.user.id, username: req.user.username });
