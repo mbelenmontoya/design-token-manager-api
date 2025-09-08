@@ -42,8 +42,8 @@ const router = express.Router();
 // @access Public
 router.post('/login', async (req, res, next) => {
     try {
-      const { username, password } = req.body;
-      const user = await databaseService.findUserByUsername(username);
+      const { username: bodyUsername, password } = req.body;
+      const user = await databaseService.findUserByUsername(bodyUsername);
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
@@ -53,10 +53,10 @@ router.post('/login', async (req, res, next) => {
       }
       // sign a token with username and platform flag
       const id = user.id || user._id?.toString?.();
-      const username = user.username;
+      const uname = user.username;
       const platform = !!user.platformAdmin;
       const token = jwt.sign(
-        { id, username, platform },
+        { id, username: uname, platform },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN }
       );
