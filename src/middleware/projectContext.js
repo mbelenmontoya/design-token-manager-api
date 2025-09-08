@@ -10,6 +10,12 @@ export default async function projectContext(req, res, next) {
     if (!projectId) return ERR.CONTEXT_REQUIRED(res, 'Project context required');
 
     // Validar membresía del usuario en el tenant
+    if (req.user?.platform) {
+      req.role = 'admin';
+      req.tenantId = tenantId;
+      req.projectId = projectId;
+      return next();
+    }
     const memberships = await databaseService.findMembershipsByUser(req.user.id);
     const membership = memberships.find((m) => {
       const mTenant = m.tenant?._id?.toString?.() || m.tenant?.id || m.tenant || m.tenantId;
@@ -24,6 +30,10 @@ export default async function projectContext(req, res, next) {
     const projectTenant = project?.tenant?.id || project?.tenantId;
     if (!project || String(projectTenant) !== String(tenantId)) {
       return ERR.FORBIDDEN(res, 'Project not found in tenant');
+    }
+    if (membership.role !== 'admin') {
+      const assigned = await databaseService.hasProjectAssignment(req.user.id, projectId);
+      if (!assigned) return ERR.FORBIDDEN(res, 'Project not assigned to user');
     }
     req.projectId = projectId;
     next();

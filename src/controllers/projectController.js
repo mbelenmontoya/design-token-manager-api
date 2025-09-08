@@ -5,8 +5,14 @@ export const listProjects = async (req, res, next) => {
   try {
     const tenantId = req.params.tenantId;
     if (String(tenantId) !== String(req.tenantId)) return ERR.FORBIDDEN(res);
-    const projects = await databaseService.findProjectsByTenant(tenantId);
-    const items = (projects || []).map(p => ({ id: p.id || p._id?.toString?.(), name: p.name }));
+    let items;
+    if (req.role === 'admin') {
+      const projects = await databaseService.findProjectsByTenant(tenantId);
+      items = (projects || []).map(p => ({ id: p.id || p._id?.toString?.(), name: p.name }));
+    } else {
+      const assigns = await databaseService.findAssignedProjectsByUser(req.user.id, tenantId);
+      items = (assigns || []).map(a => ({ id: a.project?.id, name: a.project?.name })).filter(p => p.id);
+    }
     res.json({ items, total: items.length });
   } catch (err) { next(err); }
 };

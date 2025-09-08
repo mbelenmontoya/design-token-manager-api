@@ -47,6 +47,47 @@ npm start
 ```
 Server: http://localhost:4000
 
+## Platform Admin (super admin) setup
+
+To operate all tenants/projects from the UI without per-tenant membership, mark your user as platform admin in the database. Do this only for trusted admins.
+
+Option A — Supabase Table Editor (recommended in prod):
+- Open Supabase Dashboard → Table Editor → `users`.
+- Edit your user row → set `platformAdmin = true` → Save.
+
+Option B — Prisma Studio (local/staging):
+```
+npx prisma studio
+# In browser → Model "User" → your user → set platformAdmin = true → Save
+```
+
+Password note: The `password` column stores a bcrypt hash. If you typed plain text, login will fail. To generate a bcrypt hash locally:
+```
+node -e "require('bcryptjs').hash('Admin#2002',10).then(h=>console.log(h))"
+```
+Paste the hash into `users.password` in Studio/Table Editor.
+
+## Quick local auth check (no Postman)
+
+```
+export ADMIN_USERNAME='your-email@example.com'
+export ADMIN_PASSWORD='YourPasswordHere'
+TOKEN=$(curl -s http://localhost:4000/api/v1/auth/login \
+  --json "{\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\"}" | jq -r '.token')
+echo "$TOKEN"   # should show a non-empty JWT
+
+# Current user
+curl -s http://localhost:4000/api/v1/users/me -H "Authorization: Bearer $TOKEN" | jq .
+
+# Tenants (platform admin only)
+curl -s http://localhost:4000/api/v1/tenants -H "Authorization: Bearer $TOKEN" | jq .
+```
+
+## Headers & context
+- Org-scoped endpoints require `x-tenant-id`.
+- Project-scoped endpoints require `x-tenant-id` and `x-project-id`.
+- The UI resolves these via `/users/me/memberships` and `/tenants/:tenantId/projects`.
+
 ## Local verification (one‑shot)
 Runs status checks, Supabase tests, and smoke tests. Requires `API_KEY`, `TENANT_ID`, `PROJECT_ID` in env for full smoke.
 ```
@@ -59,6 +100,12 @@ npm run local:verify
 npm run smoke:supabase
 ```
 Expected output ends with: `All smoke tests passed ✅`
+
+## Assignment smoke (project membership enforcement)
+```
+npm run smoke:assignments
+```
+It logs assignment create/list/delete status. Editors/viewers can only operate on assigned projects; org_admin sees/manages all tenant projects.
 
 ### Quick endpoint checks
 ```
@@ -86,6 +133,11 @@ Covers:
 - Tokens (API key read/write)
 - Invitations/memberships (admin invite → accept → update role → revoke)
 - Token releases (seed via Prisma, read manifests/tokens)
+
+## Troubleshooting auth
+- 400 JSON error at login: your request body is not valid JSON (quote properly).
+- 401 Unauthorized: invalid credentials or expired token; regenerate token.
+- Password mismatch: ensure `users.password` stores a bcrypt hash for your plain password.
 
 ## Manual API checks
 - Auth: `POST /api/v1/auth/login` with the admin credentials you created (bootstrap prints them)

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-09-05
+
+### Added
+- Platform admin (DB flag `users.platformAdmin`) and support endpoints:
+  - `GET /api/v1/users/me` to fetch current user
+  - `GET /api/v1/tenants` (platform admin only)
+- Project assignments (user↔project) model + enforcement for editor/viewer.
+- Assignments endpoints (org_admin):
+  - `GET /api/v1/tenants/:tenantId/projects/:projectId/assignments`
+  - `POST /api/v1/tenants/:tenantId/projects/:projectId/assignments`
+  - `DELETE /api/v1/tenants/:tenantId/projects/:projectId/assignments/:userId`
+- Smoke scripts: `smoke:assignments` with create/list/delete logging.
+
+### Changed
+- `GET /api/v1/tenants/:tenantId/projects` returns all projects for org_admin and only assigned for editor/viewer.
+- Docs: local testing guide updated with platform admin setup and auth troubleshooting.
+
+
 ## [0.3.1] - 2025-09-04
 
 ### Added

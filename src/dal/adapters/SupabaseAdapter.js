@@ -314,6 +314,28 @@ export class SupabaseAdapter extends DatabaseAdapter {
     return prisma.tokenRelease.delete({ where: { id } });
   }
 
+
+  // Project assignments
+  async findProjectAssignmentsByProject(projectId) {
+    return prisma.projectAssignment.findMany({ where: { projectId }, include: { user: true } });
+  }
+  async findProjectAssignmentsByUser(userId) {
+    return prisma.projectAssignment.findMany({ where: { userId }, include: { project: true } });
+  }
+  async findAssignedProjectsByUser(userId, tenantId) {
+    return prisma.projectAssignment.findMany({ where: { userId, project: { tenantId } }, include: { project: true } });
+  }
+  async hasProjectAssignment(userId, projectId) {
+    const pa = await prisma.projectAssignment.findFirst({ where: { userId, projectId } });
+    return !!pa;
+  }
+  async createProjectAssignment(data) {
+    return prisma.projectAssignment.create({ data });
+  }
+  async deleteProjectAssignment(userId, projectId) {
+    try { await prisma.projectAssignment.delete({ where: { userId_projectId: { userId, projectId } } }); return true; } catch { return false; }
+  }
+
   // Transaction operations (use prisma.$transaction in higher-level flows)
   async beginTransaction() { return null; }
   async commitTransaction() { return true; }
