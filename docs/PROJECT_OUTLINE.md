@@ -11,19 +11,24 @@
 - JWT-based authentication with bcrypt password hashing
 - API key authentication for programmatic access
 - Role-based access control (Admin, Editor, Viewer)
+- Project assignments (user ↔ project mapping) with role enforcement
+- Platform admin support for tenant management
 - Complete token CRUD operations with validation
 - Bulk import/export functionality
 - Team management with invitations and memberships
 - Interactive Swagger/OpenAPI documentation
 - Comprehensive test suite with Jest and Supertest
-- Supabase/PostgreSQL via Prisma (current runtime). Legacy Mongo notes are historical.
+- Supabase/PostgreSQL via Prisma with Database Abstraction Layer (DAL)
 - Express middleware for CORS, logging, and error handling
+- Dashboard endpoints for tenant creation and admin invitations
+- Status endpoints for database health monitoring
 
-### 🔄 In Progress
-- **Performance Optimization**: Database query optimization and indexing
-- **Security Enhancements**: API rate limiting and audit logging
-- **Documentation**: Comprehensive API guides and SDK development
-- **Testing**: Expanding test coverage and integration tests
+### 🔄 In Progress - Stage 1.1 (Post-Migration Polish & Production Readiness)
+- **Code TODOs**: Webhook signature validation, email service integration
+- **Test Coverage Expansion**: API keys, categories, factories, edge cases
+- **Billing Readiness**: Optional billing stub endpoints
+- **Performance Validation**: Load tests and benchmarks
+- **CI Re-enablement**: Automated Supabase tests on PRs
 
 ### 📋 Planned Features
 - Token versioning and history tracking
@@ -39,7 +44,9 @@
 ### Backend Architecture
 - **Node.js 18+** with ES modules support
 - **Express 5.1.0** web framework with middleware
-- **Supabase/PostgreSQL** via Prisma client
+- **PostgreSQL (Supabase)** cloud-hosted database
+- **Prisma ORM** for type-safe database operations
+- **Database Abstraction Layer (DAL)** for flexible database operations
 - **JWT** for secure user authentication
 - **bcryptjs** for password hashing and security
 
@@ -53,7 +60,8 @@
 - **ESLint** for code quality and consistency
 - **Jest** for unit and integration testing
 - **Supertest** for HTTP endpoint testing
-- Supabase integration tests and smoke scripts for verification
+- **Supabase integration tests** and smoke scripts for verification
+- **Prisma CLI** for schema management and migrations
 - **nodemon** for development server auto-reload
 
 ## Key Project Processes
@@ -82,11 +90,12 @@
 
 ## Task Categories & Priorities
 
-### High Priority (Current Sprint)
-1. **API Rate Limiting**: Implement request throttling and abuse prevention
-2. **Audit Logging**: Add comprehensive activity tracking
-3. **Performance Optimization**: Database query optimization and indexing
-4. **Security Updates**: Update dependencies and address vulnerabilities
+### High Priority (Stage 1.1 - Current)
+1. **Code TODOs**: Webhook signature validation and email service integration
+2. **Test Coverage**: Expand Supabase tests (API keys, categories, edge cases)
+3. **Billing Stubs**: Optional billing endpoints for integration readiness
+4. **Performance Benchmarks**: Load tests for token operations
+5. **CI Re-enablement**: Automated testing on PRs
 
 ### Medium Priority (Next 2 Sprints)
 1. **Token Versioning**: Implement version history and change tracking
@@ -182,10 +191,11 @@
 ## Risk Assessment
 
 ### Technical Risks
-- **Database Performance**: MongoDB performance degradation with scale
+- **Database Performance**: PostgreSQL performance optimization needs
 - **Security Vulnerabilities**: Authentication and authorization weaknesses
 - **API Breaking Changes**: Unintended breaking changes affecting consumers
 - **Dependency Issues**: Third-party library vulnerabilities or failures
+- **Webhook Security**: Production webhook signature validation pending
 
 ### Business Risks
 - **Developer Adoption**: Complex API reducing developer adoption
@@ -267,7 +277,7 @@
 
 ### Prerequisites
 - Node.js 18+ and npm
-- Supabase project and database URL
+- Supabase project with PostgreSQL database
 - Git version control
 - Code editor (VS Code recommended)
 
@@ -282,11 +292,16 @@ npm install
 
 # Environment configuration
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your Supabase credentials
 
-# Seed initial data
-node scripts/seedUser.js
-node scripts/seedCategories.js
+# Generate Prisma client
+npx prisma generate
+
+# Push schema to database
+npx prisma db push
+
+# Bootstrap initial data (tenant, project, user, API key)
+npm run bootstrap:supabase
 
 # Start development server
 npm run dev
@@ -297,11 +312,14 @@ npm run dev
 # Run all tests
 npm test
 
-# Run endpoint tests
-npm run test:endpoints
+# Run Supabase integration tests
+npm run test:supabase
 
-# Run with coverage
-npm test -- --coverage
+# Run smoke tests
+npm run smoke:all
+
+# Local verification (status + tests + smoke)
+npm run local:verify
 ```
 
 ---

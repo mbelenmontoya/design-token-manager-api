@@ -1,0 +1,174 @@
+{
+  "version": "1.0",
+  "description": "Skill activation triggers for Design Token Manager API (Node.js/Express/Prisma/PostgreSQL)",
+  "skills": {
+    "api-development-standards": {
+      "type": "guardrail",
+      "enforcement": "suggest",
+      "priority": "critical",
+      "description": "Enforces Express/Prisma/multi-tenant patterns for Design Token Manager API",
+      "promptTriggers": {
+        "keywords": [
+          "controller",
+          "route",
+          "middleware",
+          "endpoint",
+          "API",
+          "database",
+          "prisma",
+          "DAL",
+          "tenant",
+          "multi-tenant",
+          "authentication",
+          "authorization",
+          "JWT",
+          "API key"
+        ],
+        "intentPatterns": [
+          "(create|add|build|modify|update).*?(controller|route|endpoint|middleware)",
+          "(implement|add).*?(authentication|auth|authorization)",
+          "(query|access|read|write).*?database",
+          "tenant.*?(isolation|filtering|context)",
+          "(create|modify|update).*?token"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": [
+          "src/controllers/**/*.js",
+          "src/routes/**/*.js",
+          "src/middleware/**/*.js",
+          "src/dal/**/*.js"
+        ],
+        "contentPatterns": [
+          "import.*?databaseService",
+          "import.*?prisma",
+          "express\\.Router",
+          "req\\.tenant",
+          "verifyJWT",
+          "verifyApiKey",
+          "tenantContext"
+        ]
+      }
+    },
+    "code-comment-standards": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "description": "Enforces clean, maintainable code comments without temporal references",
+      "promptTriggers": {
+        "keywords": [
+          "comment",
+          "documentation",
+          "JSDoc",
+          "TSDoc",
+          "document code",
+          "add comments"
+        ],
+        "intentPatterns": [
+          "(add|write|create).*?(comment|documentation)",
+          "(document|explain).*?(function|class|module)",
+          "how to.*?comment"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": [
+          "src/**/*.js",
+          "prisma/**/*.prisma",
+          "tests/**/*.js"
+        ],
+        "pathExclusions": [
+          "node_modules/**",
+          "dist/**",
+          "coverage/**"
+        ],
+        "contentPatterns": [
+          "Phase \\d+",
+          "Task \\d+",
+          "Step \\d+",
+          "TODO:",
+          "/\\*\\*",
+          "//"
+        ]
+      }
+    },
+    "project-planning": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "description": "Strategic planning and task breakdown for features and refactoring",
+      "promptTriggers": {
+        "keywords": [
+          "plan",
+          "planning",
+          "architecture",
+          "design",
+          "strategy",
+          "roadmap",
+          "break down",
+          "task breakdown",
+          "implementation plan",
+          "feature plan"
+        ],
+        "intentPatterns": [
+          "(create|make|build|develop|write).*?plan",
+          "(how to|how should I).*?(plan|approach|architect)",
+          "(break down|organize).*?(task|feature|project)",
+          "plan.*?(feature|refactor|migration)"
+        ]
+      }
+    },
+    "step-by-step-execution": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "description": "Methodical step-by-step implementation to prevent breaking changes",
+      "promptTriggers": {
+        "keywords": [
+          "step by step",
+          "methodical",
+          "systematic",
+          "implement",
+          "walk through",
+          "guide me",
+          "one by one",
+          "carefully",
+          "fix",
+          "build",
+          "refactor",
+          "integrate"
+        ],
+        "intentPatterns": [
+          "step.by.step",
+          "(walk|guide).me.through",
+          "(implement|build|fix|refactor).*?(carefully|methodically|systematically)",
+          "(fix|debug|troubleshoot).*?",
+          "(build|create|implement).*?(feature|component|system)"
+        ]
+      }
+    },
+    "skill-developer": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "description": "Meta-skill for creating and managing Claude Code skills",
+      "promptTriggers": {
+        "keywords": [
+          "skill system",
+          "create skill",
+          "add skill",
+          "skill triggers",
+          "skill rules",
+          "hook system",
+          "skill development",
+          "skill-rules.json",
+          "modify skill"
+        ],
+        "intentPatterns": [
+          "(how do|how does|explain).*?skill",
+          "(create|add|modify|build).*?skill",
+          "skill.*?(work|trigger|activate|system)"
+        ]
+      }
+    }
+  }
+}

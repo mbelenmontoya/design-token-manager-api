@@ -1,6 +1,6 @@
 # Design Token Manager API - Product Requirements Document (PRD)
 
-Note: The live implementation runs on Supabase/PostgreSQL via Prisma behind a DAL. Legacy references to MongoDB/Mongoose remain for historical context and will be trimmed as documentation is refreshed. See docs/ROADMAP.md and docs/TESTING_LOCAL_SUPABASE.md.
+**Current Implementation**: Supabase/PostgreSQL via Prisma with Database Abstraction Layer (DAL). See docs/ROADMAP.md for development stages and docs/TESTING_LOCAL_SUPABASE.md for testing guide.
 
 ## Executive Summary
 
@@ -43,7 +43,9 @@ The Design Token Manager API is a comprehensive backend service that enables:
 #### Backend Core
 - **Node.js 18+**: Modern JavaScript runtime with ES modules
 - **Express 5.1.0**: Fast, unopinionated web framework
-- **MongoDB Atlas**: Cloud-hosted NoSQL database via Mongoose ODM
+- **PostgreSQL (Supabase)**: Cloud-hosted PostgreSQL database
+- **Prisma ORM**: Type-safe database client and schema management
+- **Database Abstraction Layer (DAL)**: Flexible adapter pattern for database operations
 - **JWT Authentication**: Secure token-based authentication
 - **bcryptjs**: Password hashing and security
 
@@ -57,7 +59,7 @@ The Design Token Manager API is a comprehensive backend service that enables:
 - **ESLint**: Code quality and consistency enforcement
 - **Jest**: Unit and integration testing framework
 - **Supertest**: HTTP testing for API endpoints
-- **MongoDB Memory Server**: In-memory database for testing
+- **Supabase Integration Tests**: Database integration testing
 - **nodemon**: Development server with auto-reload
 
 #### Middleware & Security
@@ -397,10 +399,11 @@ Response:
 - **Error Handling**: Consistent error propagation and handling
 
 #### Database Standards
-- **Mongoose ODM**: Schema-based MongoDB modeling
-- **Validation**: Schema-level and application-level validation
+- **Prisma ORM**: Type-safe schema-based PostgreSQL modeling
+- **Validation**: Schema-level (Prisma) and application-level validation
 - **Indexes**: Performance optimization with database indexes
 - **Transactions**: ACID compliance for critical operations
+- **Migrations**: Prisma schema migrations for database evolution
 
 ### Testing Strategy
 
@@ -412,7 +415,7 @@ Response:
 
 #### Integration Testing
 - **API Endpoint Testing**: Complete request/response cycle testing
-- **Database Testing**: MongoDB Memory Server for isolated testing
+- **Database Testing**: Supabase integration tests for database operations
 - **Authentication Testing**: JWT and API key authentication flows
 - **Error Scenario Testing**: Comprehensive error condition coverage
 
@@ -471,7 +474,7 @@ main                 # Production-ready code
 
 #### API Security
 - **Input Validation**: Comprehensive request validation
-- **SQL Injection Prevention**: Mongoose ODM protection
+- **SQL Injection Prevention**: Prisma ORM parameterized queries
 - **XSS Prevention**: Input sanitization
 - **CORS Configuration**: Controlled cross-origin access
 
@@ -509,8 +512,8 @@ main                 # Production-ready code
 
 #### Database Optimization
 - **Indexing Strategy**: Optimized indexes for common queries
-- **Query Optimization**: Efficient MongoDB queries
-- **Connection Pooling**: Database connection management
+- **Query Optimization**: Efficient PostgreSQL queries via Prisma
+- **Connection Pooling**: Supabase connection pooling (PgBouncer)
 - **Caching**: Redis-based caching layer (planned)
 
 #### API Optimization
@@ -538,8 +541,11 @@ PORT=4000
 NODE_ENV=production
 
 # Database Configuration
-MONGO_URI=mongodb+srv://...
-MONGO_OPTIONS=retryWrites=true&w=majority
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_ANON_KEY=<anon-key>
+DB_READS=supabase
+DB_WRITES=supabase
 
 # Authentication Configuration
 JWT_SECRET=your-secret-key
@@ -570,7 +576,7 @@ RATE_LIMIT_WINDOW=900000
 
 #### Infrastructure Monitoring
 - **Server Metrics**: CPU, memory, disk usage
-- **Database Monitoring**: MongoDB performance metrics
+- **Database Monitoring**: Supabase/PostgreSQL performance metrics
 - **Network Monitoring**: Request/response monitoring
 - **Log Aggregation**: Centralized logging system
 
@@ -630,7 +636,7 @@ RATE_LIMIT_WINDOW=900000
 - **Design Tool APIs**: Direct integration with Figma, Sketch
 - **CI/CD Integration**: Pipeline integration tools
 - **Monitoring Integration**: APM and monitoring tool connectors
-- **Database Connectors**: Support for additional databases
+- **Webhook Support**: Real-time event notifications
 
 ### Long-term Vision (6+ months)
 
@@ -643,7 +649,7 @@ RATE_LIMIT_WINDOW=900000
 #### Platform Expansion
 - **Microservices Architecture**: Service decomposition
 - **Event-Driven Architecture**: Event sourcing and CQRS
-- **Multi-Database Support**: PostgreSQL, MySQL support
+- **Multi-Region Support**: Geographic distribution for performance
 - **Real-time Features**: WebSocket-based real-time updates
 
 #### Advanced Workflows

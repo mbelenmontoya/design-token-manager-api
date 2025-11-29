@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "userPromptSubmit": [
+      {
+        "command": "npx tsx .claude/hooks/skill-activation-prompt.ts",
+        "description": "Auto-suggest relevant skills based on user prompts",
+        "enabled": true,
+        "timeout": 5000
+      }
+    ]
+  },
+  "skillsDirectory": ".claude/skills",
+  "skillRulesFile": ".claude/skills/skill-rules.json"
+}

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import databaseService from '../dal/DatabaseService.js';
+import emailService from '../services/email/EmailService.js';
 
 // POST /api/v1/tenants - create tenant with admin invitation
 export async function createTenant(req, res, next) {
@@ -45,16 +46,27 @@ export async function createTenant(req, res, next) {
       expiresAt
     });
 
-    // TODO: Send email with invitation link
-    // const invitationLink = `${process.env.CLIENT_URL}/accept-invitation?token=${token}`;
-    // await emailService.sendTenantAdminInvitation(admin.email, admin.name, tenant.name, invitationLink);
+    // Send invitation email
+    const invitationLink = `${process.env.CLIENT_URL}/accept-invitation?token=${token}`;
+    const emailResult = await emailService.sendTenantAdminInvitation({
+      to: admin.email,
+      adminName: admin.name,
+      tenantName: tenant.name,
+      invitationLink,
+      expiresIn: '72 hours'
+    });
+
+    // Log email result but don't fail tenant creation if email fails
+    if (!emailResult.success) {
+      console.warn(`Tenant created but invitation email failed: ${emailResult.error}`);
+    }
 
     res.status(201).json({
       id: tenant.id,
       name: tenant.name,
       description: tenant.description,
       industry: tenant.industry,
-      invitationSent: true,
+      invitationSent: emailResult.success,
       adminEmail: admin.email
     });
   } catch (err) {

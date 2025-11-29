@@ -14,6 +14,7 @@
     "test:quick": "./scripts/quick-test.sh",
     "test:comprehensive": "./scripts/comprehensive-test.sh",
     "test:performance": "./scripts/performance-test.sh",
+    "performance:supabase": "node scripts/performance-test-supabase.js",
     "migration:status": "curl -s http://localhost:4000/status/database | jq .",
     "health:check": "curl -s http://localhost:4000/health | jq .",
     "prisma:generate": "npx prisma generate",

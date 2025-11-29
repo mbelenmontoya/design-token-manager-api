@@ -1,8 +1,8 @@
 # Design Token Manager API - Roadmap
 
-> **Current State (Today)**: API is running on Supabase/PostgreSQL via Prisma behind a Database Abstraction Layer (DAL). Core controllers (tokens/import, categories, API keys, invitations, memberships, releases) use DAL. Mongo models and wiring were removed. CI is temporarily disabled (local-first workflow). New read endpoints added for dashboard integration.
+> **Current State**: API running on Supabase/PostgreSQL via Prisma with Database Abstraction Layer (DAL). Stage 1 migration complete. All controllers migrated. Platform admin support, project assignments, and dashboard endpoints operational. Currently in Stage 1.1 (post-migration polish & production readiness).
 
-> **Pain-Point Goals**: Strong multi-tenant model and RBAC for enterprise. Versioned tokens + immutable artifacts (fast CDN). Easy exports and eventually GitHub PR push. Clear observability (health, metrics, audit).
+> **Vision**: Enterprise-grade design token management with strong multi-tenant architecture, RBAC, versioned tokens with immutable CDN-ready artifacts, seamless GitHub integration, and comprehensive observability.
 
 ---
 
@@ -27,7 +27,7 @@
 - No breaking changes to API contracts (stable responses; `id` normalization)
 - Deploy system healthy (Render deploy uses `@prisma/client` + postinstall generate)
 
-#### **Current Status**: ✅ Core migration landed; Swagger/docs cleanup done
+#### **Current Status**: ✅ Complete
 - ✅ Supabase project setup
 - ✅ Prisma schema and generated client
 - ✅ DAL foundation (Supabase active)
@@ -36,6 +36,44 @@
 - ✅ Status endpoints
 - ✅ Local smoke + Supabase Jest tests
 - ✅ Swagger/OpenAPI refresh (schemas normalized; endpoints documented)
+- ✅ Platform admin support and project assignments (v0.3.2)
+- ✅ Dashboard endpoints (tenant creation, admin invitations)
+
+---
+
+### **Stage 1.1 — Post-Migration Polish & Production Readiness**
+
+#### **Objectives**: Address immediate TODOs, expand test coverage, add billing readiness, re-enable CI
+
+#### **Deliverables**:
+- **Code TODOs Resolution**:
+  - Webhook signature validation (Mercado Pago X-Signature/HMAC for production)
+  - Email service integration for tenant admin invitations
+- **Test Coverage Expansion**:
+  - Comprehensive Supabase tests for API keys edge cases
+  - Category CRUD tests
+  - Factory tests for tenant/project/user creation
+  - Edge case scenarios (invalid data, boundary conditions)
+- **Billing Stubs** (Optional):
+  - `GET /api/v1/billing/summary` - billing status and usage summary
+  - `GET /api/v1/billing/portal` - customer portal link generation
+- **Performance Validation**:
+  - Load tests for token list/create endpoints
+  - Response time benchmarks
+- **CI Re-enablement**:
+  - Minimal GitHub Actions workflow
+  - Automated Supabase tests on PR
+  - Status endpoint checks
+  - Prisma schema validation
+
+#### **Acceptance Criteria**:
+- All TODO comments in code resolved or have tracking issues
+- Test coverage >85% for Supabase operations
+- Billing endpoints available (even if stubbed)
+- CI pipeline green and running on PRs
+- Performance benchmarks documented
+
+#### **Current Status**: 📋 Planned
 
 ---
 
@@ -132,32 +170,25 @@
 
 ## Current Technical Priorities
 
-### **Near-term Tasks (Next Sprint)**
+### **Active Stage: 1.1 — Post-Migration Polish & Production Readiness**
 
-> See [docs/MIGRATION_PLAN.md](MIGRATION_PLAN.md) for historical plan; runtime is Supabase-only.
+See **Stage 1.1** above for detailed deliverables and acceptance criteria.
 
-#### Recently completed
-1. Swagger/OpenAPI refresh (schemas normalized to `id`, new endpoints documented)
-2. Removed Mongo tests and setup; Supabase tests + smoke green
-3. Local verification script (`npm run local:verify`)
+#### Recently completed (Stage 1)
+1. ✅ Complete migration from MongoDB to Supabase/PostgreSQL
+2. ✅ Swagger/OpenAPI refresh (schemas normalized to `id`, new endpoints documented)
+3. ✅ Platform admin support and project assignments (v0.3.2)
+4. ✅ Dashboard endpoints (tenant creation, admin invitations)
+5. ✅ Local verification script (`npm run local:verify`)
 
-#### Up next
-1. Expand Supabase test coverage (API keys, categories, factories, edge cases)
-2. Optional billing stubs
-   - `GET /api/v1/billing/summary`
-   - `GET /api/v1/billing/portal`
-3. Performance smoke for tokens endpoints
-4. CI re-introduction (later)
-   - Minimal: start server, run status + Supabase tests using project `.env`
-
-### **Migration Strategy**
-- **Dual-write phase**: Write to both MongoDB and Supabase
-- **Validation phase**: Compare data consistency between databases
-- **Read cutover**: Switch reads to Supabase
-- **Write cutover**: Switch writes to Supabase only
-- **Cleanup phase**: Remove MongoDB adapter and dependencies
+#### Current focus (Stage 1.1)
+1. Code TODOs: Webhook validation, email service
+2. Test coverage expansion for Supabase operations
+3. Optional billing endpoint stubs
+4. Performance benchmarks for token operations
+5. CI pipeline re-enablement
 
 ---
 
-*Last Updated: September 2025*  
-*Next Review: After Swagger/OpenAPI refresh*
+*Last Updated: November 2025*
+*Next Review: After Stage 1.1 completion*

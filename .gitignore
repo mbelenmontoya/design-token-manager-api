@@ -4,3 +4,7 @@ node_modules/
 
 
 /src/generated/prisma
+
+# Claude Code skills session tracking
+.claude/hooks/state/
+.claude/hooks/node_modules/

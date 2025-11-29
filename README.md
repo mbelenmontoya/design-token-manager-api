@@ -109,14 +109,16 @@ npm run test:endpoints   # Integration tests
 
 ## Project History
 
-For detailed project history and what changes were made when, see [docs/CHANGELOG.md](docs/CHANGELOG.md).  
+For detailed project history and what changes were made when, see [docs/CHANGELOG.md](docs/CHANGELOG.md).
 For future plans and development roadmap, see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 Key highlights:
-- Multi-tenant API with DAL (Supabase/Postgres active)
-- Comprehensive authentication (JWT + API keys)
-- Migration from MongoDB to Supabase completed for controllers
-- 5-stage development roadmap for enterprise features
+- **Current Version**: 0.3.2 (Platform admin support, project assignments, dashboard endpoints)
+- **Stage 1 Complete**: Successfully migrated from MongoDB to Supabase/PostgreSQL
+- **Current Focus**: Stage 1.1 - Post-migration polish & production readiness
+- Multi-tenant API with Database Abstraction Layer (DAL)
+- Comprehensive authentication (JWT + API keys) and RBAC
+- 6-stage development roadmap for enterprise features (Stage 1 + 1.1 complete)
 
 ## Contributing
 
